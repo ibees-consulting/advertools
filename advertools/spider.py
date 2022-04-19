@@ -667,11 +667,8 @@ class SEOSitemapSpider(Spider):
 
     def start_requests(self):
         for url in self.start_urls:
-            meta = {
-                "proxy": "http://192.168.56.10:3128"
-            }
             try:
-                yield Request(url, callback=self.parse, errback=self.errback, meta=meta)
+                yield Request(url, callback=self.parse, errback=self.errback)
             except Exception as e:
                 self.logger.error(repr(e))
 
