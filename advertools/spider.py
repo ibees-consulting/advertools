@@ -389,6 +389,7 @@ Please refer to the `spider settings documentation <https://docs.scrapy.org/en/l
 for the full details.
 
 """
+from curses import meta
 import datetime
 import json
 import logging
@@ -438,7 +439,8 @@ def _crawl_or_not(url,
         if exclude_url_params is True and not qs:
             pass
         else:
-            exclude_params_in_url = not bool(set(exclude_url_params).intersection(qs))
+            exclude_params_in_url = not bool(
+                set(exclude_url_params).intersection(qs))
             supplied_conditions.append(exclude_params_in_url)
 
     if include_url_params is not None:
@@ -453,6 +455,7 @@ def _crawl_or_not(url,
         include_pattern_matched = bool(re.findall(include_url_regex, url))
         supplied_conditions.append(include_pattern_matched)
     return all(supplied_conditions)
+
 
 def _extract_images(response):
     page_has_images = response.xpath('//img')
@@ -641,8 +644,7 @@ class SEOSitemapSpider(Spider):
         'HTTPERROR_ALLOW_ALL': True,
     }
 
-
-    def __init__(self, url_list, follow_links=False,
+    def __init__(self, url_list, meta, follow_links=False,
                  allowed_domains=None,
                  exclude_url_params=None,
                  include_url_params=None,
@@ -652,10 +654,14 @@ class SEOSitemapSpider(Spider):
                  xpath_selectors=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.start_urls = json.loads(json.dumps(url_list.split(',')))
-        self.allowed_domains = json.loads(json.dumps(allowed_domains.split(',')))
+        self.meta = eval(json.loads(json.dumps(meta)))
+        self.allowed_domains = json.loads(
+            json.dumps(allowed_domains.split(',')))
         self.follow_links = eval(json.loads(json.dumps(follow_links)))
-        self.exclude_url_params = eval(json.loads(json.dumps(exclude_url_params)))
-        self.include_url_params = eval(json.loads(json.dumps(include_url_params)))
+        self.exclude_url_params = eval(
+            json.loads(json.dumps(exclude_url_params)))
+        self.include_url_params = eval(
+            json.loads(json.dumps(include_url_params)))
         self.exclude_url_regex = str(json.loads(json.dumps(exclude_url_regex)))
         if self.exclude_url_regex == "None":
             self.exclude_url_regex = None
@@ -668,7 +674,7 @@ class SEOSitemapSpider(Spider):
     def start_requests(self):
         for url in self.start_urls:
             try:
-                yield Request(url, callback=self.parse, errback=self.errback)
+                yield Request(url, callback=self.parse, errback=self.errback, meta=self.meta)
             except Exception as e:
                 self.logger.error(repr(e))
 
@@ -685,7 +691,6 @@ class SEOSitemapSpider(Spider):
         header_links = le_header.extract_links(response)
         footer_links = le_footer.extract_links(response)
         images = _extract_images(response)
-
         if links:
             parsed_links = dict(
                 links_url='@@'.join(link.url for link in links),
@@ -737,21 +742,28 @@ class SEOSitemapSpider(Spider):
             xpath_selectors = {k: v for k, v in xpath_selectors.items() if v}
         else:
             xpath_selectors = {}
-        canonical = {'canonical': '@@'.join(response.css('link[rel="canonical"]::attr(href)').getall())}
+        canonical = {
+            'canonical': '@@'.join(response.css('link[rel="canonical"]::attr(href)').getall())}
         canonical = canonical if canonical.get('canonical') else {}
-        alt_href = {'alt_href': '@@'.join(response.css('link[rel=alternate]::attr(href)').getall())}
+        alt_href = {
+            'alt_href': '@@'.join(response.css('link[rel=alternate]::attr(href)').getall())}
         alt_href = alt_href if alt_href.get('alt_href') else {}
-        alt_hreflang = {'alt_hreflang': '@@'.join(response.css('link[rel=alternate]::attr(hreflang)').getall())}
+        alt_hreflang = {
+            'alt_hreflang': '@@'.join(response.css('link[rel=alternate]::attr(hreflang)').getall())}
         alt_hreflang = alt_hreflang if alt_hreflang.get('alt_hreflang') else {}
-        og_props = response.xpath('//meta[starts-with(@property, "og:")]/@property').getall()
-        og_content = response.xpath('//meta[starts-with(@property, "og:")]/@content').getall()
+        og_props = response.xpath(
+            '//meta[starts-with(@property, "og:")]/@property').getall()
+        og_content = response.xpath(
+            '//meta[starts-with(@property, "og:")]/@content').getall()
         if og_props and og_content:
             og_props = _numbered_duplicates(og_props)
             open_graph = dict(zip(og_props, og_content))
         else:
             open_graph = {}
-        twtr_names = response.xpath('//meta[starts-with(@name, "twitter:")]/@name').getall()
-        twtr_content = response.xpath('//meta[starts-with(@name, "twitter:")]/@content').getall()
+        twtr_names = response.xpath(
+            '//meta[starts-with(@name, "twitter:")]/@name').getall()
+        twtr_content = response.xpath(
+            '//meta[starts-with(@name, "twitter:")]/@content').getall()
         if twtr_names and twtr_content:
             twtr_card = dict(zip(twtr_names, twtr_content))
         else:
@@ -814,18 +826,18 @@ class SEOSitemapSpider(Spider):
                         include_url_regex=self.include_url_regex)
                     if cond:
                         yield Request(page, callback=self.parse,
-                                      errback=self.errback)
+                                      errback=self.errback, meta=self.meta)
                     # if self.skip_url_params and urlparse(page).query:
                     #     continue
 
 
-def crawl(url_list, output_file, follow_links=False,
+def crawl(url_list, meta, output_file, follow_links=False,
           allowed_domains=None,
           exclude_url_params=None,
           include_url_params=None,
           exclude_url_regex=None,
           include_url_regex=None,
-          css_selectors=None, xpath_selectors=None, meta=None, custom_settings=None,
+          css_selectors=None, xpath_selectors=None, custom_settings=None,
           ):
     """
     Crawl a website's URLs based on the given :attr:`url_list`
@@ -929,7 +941,8 @@ def crawl(url_list, output_file, follow_links=False,
         if exclude_url_params is True:
             raise ValueError("Please make sure you don't exclude and include "
                              "parameters at the same time.")
-        common_params = set(exclude_url_params).intersection(include_url_params)
+        common_params = set(exclude_url_params).intersection(
+            include_url_params)
         if common_params:
             raise ValueError(f"Please make sure you don't include and exclude "
                              f"the same parameters.\n"
@@ -952,6 +965,7 @@ def crawl(url_list, output_file, follow_links=False,
 
     command = ['scrapy', 'runspider', spider_path,
                '-a', 'url_list=' + ','.join(url_list),
+               '-a', 'meta=' + str(meta),
                '-a', 'allowed_domains=' + ','.join(allowed_domains),
                '-a', 'follow_links=' + str(follow_links),
                '-a', 'exclude_url_params=' + str(exclude_url_params),
@@ -960,7 +974,6 @@ def crawl(url_list, output_file, follow_links=False,
                '-a', 'include_url_regex=' + str(include_url_regex),
                '-a', 'css_selectors=' + str(css_selectors),
                '-a', 'xpath_selectors=' + str(xpath_selectors),
-               '-a', 'meta=' + str(meta),
                '-o', output_file] + settings_list
     if len(','.join(url_list)) > MAX_CMD_LENGTH and not follow_links:
         split_urls = _split_long_urllist(url_list)

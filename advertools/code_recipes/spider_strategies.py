@@ -279,5 +279,5 @@ import advertools as adv
 url_list = ['https://www.ibees.biz']
 # debugpy.breakpoint()
 # print('break on this line')
-meta = {"proxy": "192.168.56.10:3128"}
+meta = {"proxy": "192.168.56.1:3128"}
 adv.crawl(url_list, output_file='example_crawl_1.jl', follow_links=False, meta=meta)
