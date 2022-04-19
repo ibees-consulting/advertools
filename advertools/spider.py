@@ -654,7 +654,7 @@ class SEOSitemapSpider(Spider):
                  xpath_selectors=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.start_urls = json.loads(json.dumps(url_list.split(',')))
-        self.meta = eval(json.loads(json.dumps(meta)))
+        self.meta = str(json.loads(json.dumps(meta)))
         self.allowed_domains = json.loads(
             json.dumps(allowed_domains.split(',')))
         self.follow_links = eval(json.loads(json.dumps(follow_links)))
