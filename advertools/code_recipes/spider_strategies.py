@@ -266,3 +266,18 @@ False                 canonical_parent     name(//link[@rel='canonical']/..)    
 ====================  ===================  =================================================================  ===============================================================================================================
 
 """
+
+import advertools as adv
+
+# import debugpy
+
+# # 5678 is the default attach port in the VS Code debug configurations. Unless a host and port are specified, host defaults to 127.0.0.1
+# debugpy.listen(3000)
+# print("Waiting for debugger attach")
+# debugpy.wait_for_client()
+
+url_list = ['https://www.ibees.biz']
+# debugpy.breakpoint()
+# print('break on this line')
+meta = {"proxy": "192.168.56.10:3128"}
+adv.crawl(url_list, output_file='example_crawl_1.jl', follow_links=False, meta=meta)
