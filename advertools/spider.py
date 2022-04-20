@@ -389,10 +389,12 @@ Please refer to the `spider settings documentation <https://docs.scrapy.org/en/l
 for the full details.
 
 """
+from concurrent.futures import process
 from curses import meta
 import datetime
 import json
 import logging
+from optparse import Values
 import platform
 import re
 import subprocess
@@ -406,7 +408,14 @@ from scrapy import Request
 from scrapy.linkextractors import LinkExtractor
 from scrapy.spiders import Spider
 from scrapy.utils.response import get_base_url
+# ska
+from scrapy.crawler import CrawlerProcess
+import debugpy
 
+debugpy.listen(3000)
+print("Waiting for debugger attach")
+debugpy.wait_for_client()
+# ska
 import advertools as adv
 
 if int(pd.__version__[0]) >= 1:
@@ -644,7 +653,7 @@ class SEOSitemapSpider(Spider):
         'HTTPERROR_ALLOW_ALL': True,
     }
 
-    def __init__(self, url_list, meta, follow_links=False,
+    def __init__(self, url_list, follow_links=False,
                  allowed_domains=None,
                  exclude_url_params=None,
                  include_url_params=None,
@@ -653,28 +662,28 @@ class SEOSitemapSpider(Spider):
                  css_selectors=None,
                  xpath_selectors=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.start_urls = json.loads(json.dumps(url_list.split(',')))
-        self.meta = str(json.loads(json.dumps(meta)))
-        self.allowed_domains = json.loads(
-            json.dumps(allowed_domains.split(',')))
-        self.follow_links = eval(json.loads(json.dumps(follow_links)))
-        self.exclude_url_params = eval(
-            json.loads(json.dumps(exclude_url_params)))
-        self.include_url_params = eval(
-            json.loads(json.dumps(include_url_params)))
-        self.exclude_url_regex = str(json.loads(json.dumps(exclude_url_regex)))
-        if self.exclude_url_regex == "None":
-            self.exclude_url_regex = None
-        self.include_url_regex = str(json.loads(json.dumps(include_url_regex)))
-        if self.include_url_regex == "None":
-            self.include_url_regex = None
-        self.css_selectors = eval(json.loads(json.dumps(css_selectors)))
-        self.xpath_selectors = eval(json.loads(json.dumps(xpath_selectors)))
+        self.start_urls =url_list
+        # self.allowed_domains = json.loads(
+        #     json.dumps(allowed_domains.split(',')))
+        # self.follow_links = eval(json.loads(json.dumps(follow_links)))
+        # self.exclude_url_params = eval(
+        #     json.loads(json.dumps(exclude_url_params)))
+        # self.include_url_params = eval(
+        #     json.loads(json.dumps(include_url_params)))
+        # self.exclude_url_regex = str(json.loads(json.dumps(exclude_url_regex)))
+        # if self.exclude_url_regex == "None":
+        #     self.exclude_url_regex = None
+        # self.include_url_regex = str(json.loads(json.dumps(include_url_regex)))
+        # if self.include_url_regex == "None":
+        #     self.include_url_regex = None
+        # self.css_selectors = eval(json.loads(json.dumps(css_selectors)))
+        # self.xpath_selectors = eval(json.loads(json.dumps(xpath_selectors)))
 
     def start_requests(self):
+        meta = {"proxy": "http://127.0.0.1:3128"}
         for url in self.start_urls:
             try:
-                yield Request(url, callback=self.parse, errback=self.errback, meta=self.meta)
+                yield Request(url, callback=self.parse, errback=self.errback,meta=meta)
             except Exception as e:
                 self.logger.error(repr(e))
 
@@ -816,6 +825,7 @@ class SEOSitemapSpider(Spider):
         )
         if self.follow_links:
             next_pages = [link.url for link in links]
+            meta = {"proxy": "http://127.0.0.1:3128"}
             if next_pages:
                 for page in next_pages:
                     cond = _crawl_or_not(
@@ -826,12 +836,12 @@ class SEOSitemapSpider(Spider):
                         include_url_regex=self.include_url_regex)
                     if cond:
                         yield Request(page, callback=self.parse,
-                                      errback=self.errback, meta=self.meta)
+                                      errback=self.errback,meta=meta)
                     # if self.skip_url_params and urlparse(page).query:
                     #     continue
 
 
-def crawl(url_list, meta, output_file, follow_links=False,
+def crawl(url_list, output_file, follow_links=False,
           allowed_domains=None,
           exclude_url_params=None,
           include_url_params=None,
@@ -962,24 +972,38 @@ def crawl(url_list, meta, output_file, follow_links=False,
             else:
                 setting = '='.join([key, str(val)])
             settings_list.extend(['-s', setting])
+    
+    # Values = ['url_list=' + ','.join(url_list), 'allowed_domains=' + ','.join(allowed_domains),
+    #            'follow_links=' + str(follow_links),
+    #            'exclude_url_params=' + str(exclude_url_params),
+    #            'include_url_params=' + str(include_url_params),
+    #            'exclude_url_regex=' + str(exclude_url_regex),
+    #            'meta=' + str(meta),
+    #            'include_url_regex=' + str(include_url_regex),
+    #            'css_selectors=' + str(css_selectors),
+    #            'xpath_selectors=' + str(xpath_selectors),
+    #            output_file] + settings_list
+    # command = ['scrapy', 'runspider', spider_path,
+    #            '-a', 'url_list=' + ','.join(url_list),
+    #            '-a', 'meta=' + str(meta),
+    #            '-a', 'allowed_domains=' + ','.join(allowed_domains),
+    #            '-a', 'follow_links=' + str(follow_links),
+    #            '-a', 'exclude_url_params=' + str(exclude_url_params),
+    #            '-a', 'include_url_params=' + str(include_url_params),
+    #            '-a', 'exclude_url_regex=' + str(exclude_url_regex),
+    #            '-a', 'include_url_regex=' + str(include_url_regex),
+    #            '-a', 'css_selectors=' + str(css_selectors),
+    #            '-a', 'xpath_selectors=' + str(xpath_selectors),
+    #            '-o', output_file] + settings_list
+    # if len(','.join(url_list)) > MAX_CMD_LENGTH and not follow_links:
+    #     split_urls = _split_long_urllist(url_list)
 
-    command = ['scrapy', 'runspider', spider_path,
-               '-a', 'url_list=' + ','.join(url_list),
-               '-a', 'meta=' + str(meta),
-               '-a', 'allowed_domains=' + ','.join(allowed_domains),
-               '-a', 'follow_links=' + str(follow_links),
-               '-a', 'exclude_url_params=' + str(exclude_url_params),
-               '-a', 'include_url_params=' + str(include_url_params),
-               '-a', 'exclude_url_regex=' + str(exclude_url_regex),
-               '-a', 'include_url_regex=' + str(include_url_regex),
-               '-a', 'css_selectors=' + str(css_selectors),
-               '-a', 'xpath_selectors=' + str(xpath_selectors),
-               '-o', output_file] + settings_list
-    if len(','.join(url_list)) > MAX_CMD_LENGTH and not follow_links:
-        split_urls = _split_long_urllist(url_list)
+    #     for u_list in split_urls:
+    #         command[4] = 'url_list=' + ','.join(u_list)
+    #         subprocess.run(command)
+    # else:
+    #     subprocess.run(command)
 
-        for u_list in split_urls:
-            command[4] = 'url_list=' + ','.join(u_list)
-            subprocess.run(command)
-    else:
-        subprocess.run(command)
+    process = CrawlerProcess()
+    process.crawl(SEOSitemapSpider, url_list=url_list)
+    process.start

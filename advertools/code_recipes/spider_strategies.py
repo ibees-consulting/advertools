@@ -268,16 +268,38 @@ False                 canonical_parent     name(//link[@rel='canonical']/..)    
 """
 
 import advertools as adv
-
+import pandas as pd
+# from scrapy.spiders import Spider
+# from scrapy.http import Request
 # import debugpy
 
-# # 5678 is the default attach port in the VS Code debug configurations. Unless a host and port are specified, host defaults to 127.0.0.1
+# 5678 is the default attach port in the VS Code debug configurations. Unless a host and port are specified, host defaults to 127.0.0.1
+
+# def my_start_requests(self):
+#     if not self.start_urls and hasattr(self, 'start_url'):
+#         raise AttributeError(
+#             "Crawling could not start: 'start_urls' not found "
+#             "or empty (but found 'start_url' attribute instead, "
+#             "did you miss an 's'?)")
+    
+#     for url in self.start_urls:
+#         yield Request(url, dont_filter=True)
+#         print("Monkey-Patched")
+
+
+# Spider.start_requests = my_start_requests
+
 # debugpy.listen(3000)
 # print("Waiting for debugger attach")
 # debugpy.wait_for_client()
 
-url_list = ['https://www.ibees.biz']
+
+url_list = ['https://www.sleekboxes.com']
+output_file = "/home/odoo/main-dev/odoon/scraping/advertools/advertools/code_recipes/example_crawl_1.jl"
 # debugpy.breakpoint()
 # print('break on this line')
-meta = {"proxy": "192.168.56.1:3128"}
-adv.crawl(url_list, output_file='example_crawl_1.jl', follow_links=False, meta=meta)
+meta = {"proxy": "http://127.0.0.1:3128"}
+adv.crawl(url_list, output_file=output_file, follow_links=False,)
+df = pd.read_json(output_file, lines=True)
+df_col = df.columns
+print(df_col)
