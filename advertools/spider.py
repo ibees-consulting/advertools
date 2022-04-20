@@ -389,12 +389,9 @@ Please refer to the `spider settings documentation <https://docs.scrapy.org/en/l
 for the full details.
 
 """
-from concurrent.futures import process
-from curses import meta
 import datetime
 import json
 import logging
-from optparse import Values
 import platform
 import re
 import subprocess
@@ -408,14 +405,7 @@ from scrapy import Request
 from scrapy.linkextractors import LinkExtractor
 from scrapy.spiders import Spider
 from scrapy.utils.response import get_base_url
-# ska
-from scrapy.crawler import CrawlerProcess
-import debugpy
 
-debugpy.listen(3000)
-print("Waiting for debugger attach")
-debugpy.wait_for_client()
-# ska
 import advertools as adv
 
 if int(pd.__version__[0]) >= 1:
@@ -662,22 +652,22 @@ class SEOSitemapSpider(Spider):
                  css_selectors=None,
                  xpath_selectors=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.start_urls =url_list
-        # self.allowed_domains = json.loads(
-        #     json.dumps(allowed_domains.split(',')))
-        # self.follow_links = eval(json.loads(json.dumps(follow_links)))
-        # self.exclude_url_params = eval(
-        #     json.loads(json.dumps(exclude_url_params)))
-        # self.include_url_params = eval(
-        #     json.loads(json.dumps(include_url_params)))
-        # self.exclude_url_regex = str(json.loads(json.dumps(exclude_url_regex)))
-        # if self.exclude_url_regex == "None":
-        #     self.exclude_url_regex = None
-        # self.include_url_regex = str(json.loads(json.dumps(include_url_regex)))
-        # if self.include_url_regex == "None":
-        #     self.include_url_regex = None
-        # self.css_selectors = eval(json.loads(json.dumps(css_selectors)))
-        # self.xpath_selectors = eval(json.loads(json.dumps(xpath_selectors)))
+        self.start_urls = json.loads(json.dumps(url_list.split(',')))
+        self.allowed_domains = json.loads(
+            json.dumps(allowed_domains.split(',')))
+        self.follow_links = eval(json.loads(json.dumps(follow_links)))
+        self.exclude_url_params = eval(
+            json.loads(json.dumps(exclude_url_params)))
+        self.include_url_params = eval(
+            json.loads(json.dumps(include_url_params)))
+        self.exclude_url_regex = str(json.loads(json.dumps(exclude_url_regex)))
+        if self.exclude_url_regex == "None":
+            self.exclude_url_regex = None
+        self.include_url_regex = str(json.loads(json.dumps(include_url_regex)))
+        if self.include_url_regex == "None":
+            self.include_url_regex = None
+        self.css_selectors = eval(json.loads(json.dumps(css_selectors)))
+        self.xpath_selectors = eval(json.loads(json.dumps(xpath_selectors)))
 
     def start_requests(self):
         meta = {"proxy": "http://127.0.0.1:3128"}
@@ -700,6 +690,7 @@ class SEOSitemapSpider(Spider):
         header_links = le_header.extract_links(response)
         footer_links = le_footer.extract_links(response)
         images = _extract_images(response)
+
         if links:
             parsed_links = dict(
                 links_url='@@'.join(link.url for link in links),
@@ -824,8 +815,8 @@ class SEOSitemapSpider(Spider):
                for k, v in response.request.headers.to_unicode_dict().items()},
         )
         if self.follow_links:
-            next_pages = [link.url for link in links]
             meta = {"proxy": "http://127.0.0.1:3128"}
+            next_pages = [link.url for link in links]
             if next_pages:
                 for page in next_pages:
                     cond = _crawl_or_not(
@@ -972,38 +963,23 @@ def crawl(url_list, output_file, follow_links=False,
             else:
                 setting = '='.join([key, str(val)])
             settings_list.extend(['-s', setting])
-    
-    # Values = ['url_list=' + ','.join(url_list), 'allowed_domains=' + ','.join(allowed_domains),
-    #            'follow_links=' + str(follow_links),
-    #            'exclude_url_params=' + str(exclude_url_params),
-    #            'include_url_params=' + str(include_url_params),
-    #            'exclude_url_regex=' + str(exclude_url_regex),
-    #            'meta=' + str(meta),
-    #            'include_url_regex=' + str(include_url_regex),
-    #            'css_selectors=' + str(css_selectors),
-    #            'xpath_selectors=' + str(xpath_selectors),
-    #            output_file] + settings_list
-    # command = ['scrapy', 'runspider', spider_path,
-    #            '-a', 'url_list=' + ','.join(url_list),
-    #            '-a', 'meta=' + str(meta),
-    #            '-a', 'allowed_domains=' + ','.join(allowed_domains),
-    #            '-a', 'follow_links=' + str(follow_links),
-    #            '-a', 'exclude_url_params=' + str(exclude_url_params),
-    #            '-a', 'include_url_params=' + str(include_url_params),
-    #            '-a', 'exclude_url_regex=' + str(exclude_url_regex),
-    #            '-a', 'include_url_regex=' + str(include_url_regex),
-    #            '-a', 'css_selectors=' + str(css_selectors),
-    #            '-a', 'xpath_selectors=' + str(xpath_selectors),
-    #            '-o', output_file] + settings_list
-    # if len(','.join(url_list)) > MAX_CMD_LENGTH and not follow_links:
-    #     split_urls = _split_long_urllist(url_list)
 
-    #     for u_list in split_urls:
-    #         command[4] = 'url_list=' + ','.join(u_list)
-    #         subprocess.run(command)
-    # else:
-    #     subprocess.run(command)
+    command = ['scrapy', 'runspider', spider_path,
+               '-a', 'url_list=' + ','.join(url_list),
+               '-a', 'allowed_domains=' + ','.join(allowed_domains),
+               '-a', 'follow_links=' + str(follow_links),
+               '-a', 'exclude_url_params=' + str(exclude_url_params),
+               '-a', 'include_url_params=' + str(include_url_params),
+               '-a', 'exclude_url_regex=' + str(exclude_url_regex),
+               '-a', 'include_url_regex=' + str(include_url_regex),
+               '-a', 'css_selectors=' + str(css_selectors),
+               '-a', 'xpath_selectors=' + str(xpath_selectors),
+               '-o', output_file] + settings_list
+    if len(','.join(url_list)) > MAX_CMD_LENGTH and not follow_links:
+        split_urls = _split_long_urllist(url_list)
 
-    process = CrawlerProcess()
-    process.crawl(SEOSitemapSpider, url_list=url_list)
-    process.start
+        for u_list in split_urls:
+            command[4] = 'url_list=' + ','.join(u_list)
+            subprocess.run(command)
+    else:
+        subprocess.run(command)

@@ -298,7 +298,7 @@ url_list = ['https://www.sleekboxes.com']
 output_file = "/home/odoo/main-dev/odoon/scraping/advertools/advertools/code_recipes/example_crawl_1.jl"
 # debugpy.breakpoint()
 # print('break on this line')
-meta = {"proxy": "http://127.0.0.1:3128"}
+# meta = {"proxy": "http://127.0.0.1:3128"}
 adv.crawl(url_list, output_file=output_file, follow_links=False,)
 df = pd.read_json(output_file, lines=True)
 df_col = df.columns
