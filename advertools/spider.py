@@ -670,7 +670,7 @@ class SEOSitemapSpider(Spider):
         self.xpath_selectors = eval(json.loads(json.dumps(xpath_selectors)))
 
     def start_requests(self):
-        meta = {"proxy": "http://127.0.0.1:3128"}
+        meta = {"proxy": "http://192.168.56.10:3128"}
         for url in self.start_urls:
             try:
                 yield Request(url, callback=self.parse, errback=self.errback,meta=meta)
