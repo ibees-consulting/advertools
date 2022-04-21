@@ -296,7 +296,7 @@ import debugpy
 
 url_list = ['https://www.sleekboxes.com']
 output_file = "/home/odoo/main-dev/odoon/scraping/advertools/advertools/code_recipes/example_crawl_1.jl"
-meta = {"proxy": "http://lljlukte-GB-NL-rotate:3r3g8quzsjp1@p.webshare.io:80"}
+meta = {"proxy": "Enter your proxy here"}
 
 adv.crawl(
                 url_list,meta,
