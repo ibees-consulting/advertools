@@ -17,7 +17,6 @@ requirements = [
     'scrapy',
     'twython',
     'pyarrow',
-    'scrapy-rotating-proxies',
 ]
 
 setup_requirements = [
