@@ -271,7 +271,7 @@ import advertools as adv
 import pandas as pd
 # from scrapy.spiders import Spider
 # from scrapy.http import Request
-# import debugpy
+import debugpy
 
 # 5678 is the default attach port in the VS Code debug configurations. Unless a host and port are specified, host defaults to 127.0.0.1
 
@@ -296,10 +296,20 @@ import pandas as pd
 
 url_list = ['https://www.sleekboxes.com']
 output_file = "/home/odoo/main-dev/odoon/scraping/advertools/advertools/code_recipes/example_crawl_1.jl"
-# debugpy.breakpoint()
-# print('break on this line')
-# meta = {"proxy": "http://127.0.0.1:3128"}
-adv.crawl(url_list, output_file=output_file, follow_links=False,)
+meta = {"proxy": "http://lljlukte-GB-NL-rotate:3r3g8quzsjp1@p.webshare.io:80"}
+
+adv.crawl(
+                url_list,meta,
+                output_file,
+                follow_links=True, exclude_url_params=True,
+                custom_settings={
+                    "ROBOTSTXT_OBEY": False,
+                    "CLOSESPIDER_TIMEOUT": 10,
+                    "CONCURRENT_REQUESTS_PER_DOMAIN": 8,
+                    "CLOSESPIDER_PAGECOUNT": 1000,
+                    "DEPTH_LIMIT": 4,
+                }
+            )
 df = pd.read_json(output_file, lines=True)
 df_col = df.columns
 print(df_col)

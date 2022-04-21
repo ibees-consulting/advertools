@@ -389,7 +389,9 @@ Please refer to the `spider settings documentation <https://docs.scrapy.org/en/l
 for the full details.
 
 """
+from curses import meta
 import datetime
+import imp
 import json
 import logging
 import platform
@@ -629,6 +631,12 @@ def _extract_content(resp, **tags_xpaths):
             if value:
                 d.update({tag: value})
     return d
+# import debugpy
+
+
+# debugpy.listen(3000)
+# print("Waiting for debugger attach")
+# debugpy.wait_for_client()
 
 
 class SEOSitemapSpider(Spider):
@@ -643,7 +651,7 @@ class SEOSitemapSpider(Spider):
         'HTTPERROR_ALLOW_ALL': True,
     }
 
-    def __init__(self, url_list, follow_links=False,
+    def __init__(self, url_list, meta, follow_links=False,
                  allowed_domains=None,
                  exclude_url_params=None,
                  include_url_params=None,
@@ -653,6 +661,7 @@ class SEOSitemapSpider(Spider):
                  xpath_selectors=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.start_urls = json.loads(json.dumps(url_list.split(',')))
+        self.meta = eval(json.loads(json.dumps(meta)))
         self.allowed_domains = json.loads(
             json.dumps(allowed_domains.split(',')))
         self.follow_links = eval(json.loads(json.dumps(follow_links)))
@@ -670,10 +679,9 @@ class SEOSitemapSpider(Spider):
         self.xpath_selectors = eval(json.loads(json.dumps(xpath_selectors)))
 
     def start_requests(self):
-        meta = {"proxy": "http://192.168.56.10:3128"}
         for url in self.start_urls:
             try:
-                yield Request(url, callback=self.parse, errback=self.errback,meta=meta)
+                yield Request(url, callback=self.parse, errback=self.errback, meta=self.meta)
             except Exception as e:
                 self.logger.error(repr(e))
 
@@ -815,7 +823,6 @@ class SEOSitemapSpider(Spider):
                for k, v in response.request.headers.to_unicode_dict().items()},
         )
         if self.follow_links:
-            meta = {"proxy": "http://127.0.0.1:3128"}
             next_pages = [link.url for link in links]
             if next_pages:
                 for page in next_pages:
@@ -827,12 +834,12 @@ class SEOSitemapSpider(Spider):
                         include_url_regex=self.include_url_regex)
                     if cond:
                         yield Request(page, callback=self.parse,
-                                      errback=self.errback,meta=meta)
+                                      errback=self.errback,meta=self.meta)
                     # if self.skip_url_params and urlparse(page).query:
                     #     continue
 
 
-def crawl(url_list, output_file, follow_links=False,
+def crawl(url_list, meta, output_file, follow_links=False,
           allowed_domains=None,
           exclude_url_params=None,
           include_url_params=None,
@@ -964,8 +971,13 @@ def crawl(url_list, output_file, follow_links=False,
                 setting = '='.join([key, str(val)])
             settings_list.extend(['-s', setting])
 
+    # meta_list = []
+    # if meta is not None:
+    #     meta_list.append(meta)
+
     command = ['scrapy', 'runspider', spider_path,
                '-a', 'url_list=' + ','.join(url_list),
+               '-a', 'meta=' + json.dumps(meta),
                '-a', 'allowed_domains=' + ','.join(allowed_domains),
                '-a', 'follow_links=' + str(follow_links),
                '-a', 'exclude_url_params=' + str(exclude_url_params),

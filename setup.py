@@ -17,7 +17,7 @@ requirements = [
     'scrapy',
     'twython',
     'pyarrow',
-    'haipproxy @ git+https://github.com/ska-ibees/haipproxy.git@master#egg=haipproxy',
+    'scrapy-rotating-proxies',
 ]
 
 setup_requirements = [
