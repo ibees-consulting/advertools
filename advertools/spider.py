@@ -391,7 +391,6 @@ for the full details.
 """
 from curses import meta
 import datetime
-import imp
 import json
 import logging
 import platform
