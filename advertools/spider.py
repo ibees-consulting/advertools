@@ -389,7 +389,6 @@ Please refer to the `spider settings documentation <https://docs.scrapy.org/en/l
 for the full details.
 
 """
-from curses import meta
 import datetime
 import json
 import logging

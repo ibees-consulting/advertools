@@ -266,13 +266,26 @@ False                 canonical_parent     name(//link[@rel='canonical']/..)    
 ====================  ===================  =================================================================  ===============================================================================================================
 
 """
-
 import advertools as adv
 import pandas as pd
 # from scrapy.spiders import Spider
 # from scrapy.http import Request
 import debugpy
+debugpy.listen(3000)
+print("Waiting for debugger attach")
+debugpy.wait_for_client()
+from advertools.spider import SEOSitemapSpider
 
+class DmozSpider(SEOSitemapSpider):
+    name = "dmoz"
+
+    def errback(self, failure):
+        print("Error back")
+    
+    def parse(self, response):
+        print("Response")
+
+    
 # 5678 is the default attach port in the VS Code debug configurations. Unless a host and port are specified, host defaults to 127.0.0.1
 
 # def my_start_requests(self):
@@ -289,27 +302,26 @@ import debugpy
 
 # Spider.start_requests = my_start_requests
 
-# debugpy.listen(3000)
-# print("Waiting for debugger attach")
-# debugpy.wait_for_client()
-
 
 url_list = ['https://www.example.com']
 output_file = "/home/odoo/main-dev/odoon/scraping/advertools/advertools/code_recipes/example_crawl_1.jl"
 meta = {"proxy": "http://lljlukte-GB-NL-rotate:3r3g8quzsjp1@p.webshare.io:80"}
 
-adv.crawl(
-                url_list,meta,
-                output_file,
-                follow_links=True, exclude_url_params=True,
-                custom_settings={
-                    "ROBOTSTXT_OBEY": False,
-                    "CLOSESPIDER_TIMEOUT": 10,
-                    "CONCURRENT_REQUESTS_PER_DOMAIN": 8,
-                    "CLOSESPIDER_PAGECOUNT": 1000,
-                    "DEPTH_LIMIT": 4,
-                }
-            )
-df = pd.read_json(output_file, lines=True)
-df_col = df.columns
-print(df_col)
+for url in url_list:
+    adv.crawl(
+                    url,meta,
+                    output_file,
+                    follow_links=True, exclude_url_params=True,
+                    custom_settings={
+                        "ROBOTSTXT_OBEY": False,
+                        "CLOSESPIDER_TIMEOUT": 10,
+                        "CONCURRENT_REQUESTS_PER_DOMAIN": 8,
+                        "CLOSESPIDER_PAGECOUNT": 1000,
+                        "DEPTH_LIMIT": 4,
+                        "USER_AGENT" : 'Mozilla/5.0 (iPad; CPU OS 12_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148'
+                    }
+                )
+            
+    df = pd.read_json(output_file, lines=True)
+    df_col = df.columns
+    print(df_col)
