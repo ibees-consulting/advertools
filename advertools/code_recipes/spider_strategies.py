@@ -268,24 +268,26 @@ False                 canonical_parent     name(//link[@rel='canonical']/..)    
 """
 import advertools as adv
 import pandas as pd
+
 # from scrapy.spiders import Spider
 # from scrapy.http import Request
-import debugpy
-debugpy.listen(3000)
-print("Waiting for debugger attach")
-debugpy.wait_for_client()
+# import debugpy
+# debugpy.listen(3000)
+# print("Waiting for debugger attach")
+# debugpy.wait_for_client()
 from advertools.spider import SEOSitemapSpider
+
 
 class DmozSpider(SEOSitemapSpider):
     name = "dmoz"
 
     def errback(self, failure):
         print("Error back")
-    
+
     def parse(self, response):
         print("Response")
 
-    
+
 # 5678 is the default attach port in the VS Code debug configurations. Unless a host and port are specified, host defaults to 127.0.0.1
 
 # def my_start_requests(self):
@@ -294,7 +296,7 @@ class DmozSpider(SEOSitemapSpider):
 #             "Crawling could not start: 'start_urls' not found "
 #             "or empty (but found 'start_url' attribute instead, "
 #             "did you miss an 's'?)")
-    
+
 #     for url in self.start_urls:
 #         yield Request(url, dont_filter=True)
 #         print("Monkey-Patched")
@@ -303,25 +305,46 @@ class DmozSpider(SEOSitemapSpider):
 # Spider.start_requests = my_start_requests
 
 
-url_list = ['https://www.example.com']
+url_list = ["https://www.example.com"]
 output_file = "/home/odoo/main-dev/odoon/scraping/advertools/advertools/code_recipes/example_crawl_1.jl"
-meta = {"proxy": "http://lljlukte-GB-NL-rotate:3r3g8quzsjp1@p.webshare.io:80"}
+# meta = {"proxy": "http://lljlukte-GB-NL-rotate:3r3g8quzsjp1@p.webshare.io:80"}
+meta = {
+    "proxy": [
+        "http://127.0.0.1:3128",
+        "http://127.0.0.2:3128",
+        "http://127.0.0.3:3128",
+        "http://127.0.0.4:3128",
+    ]
+}
+# proxy_dict = dict((key, val) for key, val in meta.items() if key =="proxy")
+# d1 = dict((key, val) for key, val in meta.items() if key =="d1_key")
+# d1 = list(map(lambda x : x['d1_key'], meta))
+# meta['d1_key'].append('Andrew')
+# proxy = meta["proxy"]
+# rnd_proxy = random.choice(proxy)
+# print(rnd_proxy)
+# meta["proxy"] = rnd_proxy
+# print(meta)
+# print(random.choice(d1))
+
 
 for url in url_list:
     adv.crawl(
-                    url,meta,
-                    output_file,
-                    follow_links=True, exclude_url_params=True,
-                    custom_settings={
-                        "ROBOTSTXT_OBEY": False,
-                        "CLOSESPIDER_TIMEOUT": 10,
-                        "CONCURRENT_REQUESTS_PER_DOMAIN": 8,
-                        "CLOSESPIDER_PAGECOUNT": 1000,
-                        "DEPTH_LIMIT": 4,
-                        "USER_AGENT" : 'Mozilla/5.0 (iPad; CPU OS 12_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148'
-                    }
-                )
-            
+        url,
+        output_file,
+        follow_links=True,
+        exclude_url_params=True,
+        custom_settings={
+            "ROBOTSTXT_OBEY": False,
+            "CLOSESPIDER_TIMEOUT": 10,
+            "CONCURRENT_REQUESTS_PER_DOMAIN": 8,
+            "CLOSESPIDER_PAGECOUNT": 1000,
+            "DEPTH_LIMIT": 4,
+            "USER_AGENT": "Mozilla/5.0 (iPad; CPU OS 12_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148",
+        },
+        meta=meta,
+    )
+
     df = pd.read_json(output_file, lines=True)
     df_col = df.columns
     print(df_col)

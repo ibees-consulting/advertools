@@ -405,6 +405,7 @@ from scrapy import Request
 from scrapy.linkextractors import LinkExtractor
 from scrapy.spiders import Spider
 from scrapy.utils.response import get_base_url
+import random
 
 import advertools as adv
 
@@ -415,21 +416,37 @@ else:
 
 from advertools import __version__ as adv_version
 
-spider_path = adv.__path__[0] + '/spider.py'
+spider_path = adv.__path__[0] + "/spider.py"
 
-user_agent = f'advertools/{adv_version}'
+user_agent = f"advertools/{adv_version}"
 
-BODY_TEXT_SELECTOR = '//body//span//text() | //body//p//text() | //body//li//text()'
+BODY_TEXT_SELECTOR = (
+    "//body//span//text() | //body//p//text() | //body//li//text()"
+)
 
-_IMG_ATTRS = {'alt', 'crossorigin', 'height', 'ismap', 'loading', 'longdesc',
-              'referrerpolicy', 'sizes', 'src', 'srcset', 'usemap', 'width'}
+_IMG_ATTRS = {
+    "alt",
+    "crossorigin",
+    "height",
+    "ismap",
+    "loading",
+    "longdesc",
+    "referrerpolicy",
+    "sizes",
+    "src",
+    "srcset",
+    "usemap",
+    "width",
+}
 
 
-def _crawl_or_not(url,
-                  exclude_url_params=None,
-                  include_url_params=None,
-                  exclude_url_regex=None,
-                  include_url_regex=None):
+def _crawl_or_not(
+    url,
+    exclude_url_params=None,
+    include_url_params=None,
+    exclude_url_regex=None,
+    include_url_regex=None,
+):
     qs = parse_qs(urlsplit(url).query)
     supplied_conditions = []
     if exclude_url_params is not None:
@@ -439,7 +456,8 @@ def _crawl_or_not(url,
             pass
         else:
             exclude_params_in_url = not bool(
-                set(exclude_url_params).intersection(qs))
+                set(exclude_url_params).intersection(qs)
+            )
             supplied_conditions.append(exclude_params_in_url)
 
     if include_url_params is not None:
@@ -457,23 +475,24 @@ def _crawl_or_not(url,
 
 
 def _extract_images(response):
-    page_has_images = response.xpath('//img')
+    page_has_images = response.xpath("//img")
     if page_has_images:
-        img_attributes = reduce(set.union,
-                                [set(x.attrib.keys())
-                                 for x in page_has_images])
+        img_attributes = reduce(
+            set.union, [set(x.attrib.keys()) for x in page_has_images]
+        )
         img_attributes = img_attributes.intersection(_IMG_ATTRS)
         d = dict()
         for im_attr in img_attributes:
-            d['img_' + im_attr] = '@@'.join([im.attrib.get(im_attr) or ''
-                                            for im in response.xpath('//img')])
+            d["img_" + im_attr] = "@@".join(
+                [im.attrib.get(im_attr) or "" for im in response.xpath("//img")]
+            )
         return d
     return {}
 
 
 def get_max_cmd_len():
     system = platform.system()
-    cmd_dict = {'Windows': 7000, 'Linux': 100000, 'Darwin': 100000}
+    cmd_dict = {"Windows": 7000, "Linux": 100000, "Darwin": 100000}
     if system in cmd_dict:
         return cmd_dict[system]
     return 6000
@@ -499,57 +518,58 @@ class MyLinkExtractor(LinkExtractor):
             docs = [response.selector]
         all_links = []
         for doc in docs:
-            links = self._extract_links(doc, response.url, response.encoding,
-                                        base_url)
+            links = self._extract_links(
+                doc, response.url, response.encoding, base_url
+            )
             all_links.extend(self._process_links(links))
         return all_links
 
 
 le = MyLinkExtractor(unique=False)
-le_nav = MyLinkExtractor(unique=False, restrict_xpaths='//nav')
-le_header = MyLinkExtractor(unique=False, restrict_xpaths='//header')
-le_footer = MyLinkExtractor(unique=False, restrict_xpaths='//footer')
+le_nav = MyLinkExtractor(unique=False, restrict_xpaths="//nav")
+le_header = MyLinkExtractor(unique=False, restrict_xpaths="//header")
+le_footer = MyLinkExtractor(unique=False, restrict_xpaths="//footer")
 
 crawl_headers = {
-    'url',
-    'title',
-    'meta_desc',
-    'viewport',
-    'charset',
-    'alt_href',
-    'alt_hreflang',
-    'h1',
-    'h2',
-    'h3',
-    'h4',
-    'h5',
-    'h6',
-    'canonical',
-    'body_text',
-    'size',
-    'download_timeout',
-    'download_slot',
-    'download_latency',
-    'redirect_times',
-    'redirect_ttl',
-    'redirect_urls',
-    'redirect_reasons',
-    'depth',
-    'status',
-    'links_url',
-    'links_text',
-    'links_nofollow',
-    'img_src',
-    'img_alt',
-    'ip_address',
-    'crawl_time',
-    'blocked_by_robotstxt',
-    'jsonld_errors',
-    'request_headers_accept',
-    'request_headers_accept-language',
-    'request_headers_user-agent',
-    'request_headers_accept-encoding',
-    'request_headers_cookie',
+    "url",
+    "title",
+    "meta_desc",
+    "viewport",
+    "charset",
+    "alt_href",
+    "alt_hreflang",
+    "h1",
+    "h2",
+    "h3",
+    "h4",
+    "h5",
+    "h6",
+    "canonical",
+    "body_text",
+    "size",
+    "download_timeout",
+    "download_slot",
+    "download_latency",
+    "redirect_times",
+    "redirect_ttl",
+    "redirect_urls",
+    "redirect_reasons",
+    "depth",
+    "status",
+    "links_url",
+    "links_text",
+    "links_nofollow",
+    "img_src",
+    "img_alt",
+    "ip_address",
+    "crawl_time",
+    "blocked_by_robotstxt",
+    "jsonld_errors",
+    "request_headers_accept",
+    "request_headers_accept-language",
+    "request_headers_user-agent",
+    "request_headers_accept-encoding",
+    "request_headers_cookie",
 }
 
 
@@ -576,11 +596,11 @@ def _numbered_duplicates(items):
     item_count = dict.fromkeys(items, 0)
     numbered_items = []
     for item in items:
-        numbered_items.append(item + '_' + str(item_count[item]))
+        numbered_items.append(item + "_" + str(item_count[item]))
         item_count[item] += 1
     for i, num_item in enumerate(numbered_items):
-        split_number = num_item.rsplit('_', maxsplit=1)
-        if split_number[1] == '0':
+        split_number = num_item.rsplit("_", maxsplit=1)
+        if split_number[1] == "0":
             numbered_items[i] = split_number[0]
     return numbered_items
 
@@ -589,9 +609,9 @@ def _json_to_dict(jsonobj, i=None):
     try:
         df = json_normalize(jsonobj)
         if i:
-            df = df.add_prefix('jsonld_{}_'.format(i))
+            df = df.add_prefix("jsonld_{}_".format(i))
         else:
-            df = df.add_prefix('jsonld_')
+            df = df.add_prefix("jsonld_")
         return dict(zip(df.columns, df.values[0]))
     except Exception as e:
         logger = logging.getLogger(__name__)
@@ -600,35 +620,38 @@ def _json_to_dict(jsonobj, i=None):
 
 
 tags_xpaths = {
-    'title': '//title/text()',
-    'meta_desc': '//meta[@name="description"]/@content',
-    'viewport': '//meta[@name="viewport"]/@content',
-    'charset': '//meta[@charset]/@charset',
-    'h1': '//h1',
-    'h2': '//h2',
-    'h3': '//h3',
-    'h4': '//h4',
-    'h5': '//h5',
-    'h6': '//h6',
-    'canonical': '//link[@rel="canonical"]/@href',
-    'alt_href': '//link[@rel="alternate"]/@href',
-    'alt_hreflang': '//link[@rel="alternate"]/@hreflang',
+    "title": "//title/text()",
+    "meta_desc": '//meta[@name="description"]/@content',
+    "viewport": '//meta[@name="viewport"]/@content',
+    "charset": "//meta[@charset]/@charset",
+    "h1": "//h1",
+    "h2": "//h2",
+    "h3": "//h3",
+    "h4": "//h4",
+    "h5": "//h5",
+    "h6": "//h6",
+    "canonical": '//link[@rel="canonical"]/@href',
+    "alt_href": '//link[@rel="alternate"]/@href',
+    "alt_hreflang": '//link[@rel="alternate"]/@hreflang',
 }
 
 
 def _extract_content(resp, **tags_xpaths):
     d = {}
     for tag, xpath in tags_xpaths.items():
-        if not tag.startswith('h'):
-            value = '@@'.join(resp.xpath(xpath).getall())
+        if not tag.startswith("h"):
+            value = "@@".join(resp.xpath(xpath).getall())
             if value:
                 d.update({tag: value})
         else:
-            value = '@@'.join([h.root.text_content()
-                               for h in resp.xpath(xpath)])
+            value = "@@".join(
+                [h.root.text_content() for h in resp.xpath(xpath)]
+            )
             if value:
                 d.update({tag: value})
     return d
+
+
 # import debugpy
 
 
@@ -638,35 +661,45 @@ def _extract_content(resp, **tags_xpaths):
 
 
 class SEOSitemapSpider(Spider):
-    name = 'seo_spider'
+    name = "seo_spider"
     follow_links = False
     skip_url_params = False
     css_selectors = {}
     xpath_selectors = {}
     custom_settings = {
-        'USER_AGENT': user_agent,
-        'ROBOTSTXT_OBEY': True,
-        'HTTPERROR_ALLOW_ALL': True,
+        "USER_AGENT": user_agent,
+        "ROBOTSTXT_OBEY": True,
+        "HTTPERROR_ALLOW_ALL": True,
     }
 
-    def __init__(self, url_list, meta, follow_links=False,
-                 allowed_domains=None,
-                 exclude_url_params=None,
-                 include_url_params=None,
-                 exclude_url_regex=None,
-                 include_url_regex=None,
-                 css_selectors=None,
-                 xpath_selectors=None, *args, **kwargs):
+    def __init__(
+        self,
+        url_list,
+        follow_links=False,
+        allowed_domains=None,
+        exclude_url_params=None,
+        include_url_params=None,
+        exclude_url_regex=None,
+        include_url_regex=None,
+        css_selectors=None,
+        xpath_selectors=None,
+        meta=None,
+        *args,
+        **kwargs,
+    ):
         super().__init__(*args, **kwargs)
-        self.start_urls = json.loads(json.dumps(url_list.split(',')))
+        self.start_urls = json.loads(json.dumps(url_list.split(",")))
         self.meta = eval(json.loads(json.dumps(meta)))
         self.allowed_domains = json.loads(
-            json.dumps(allowed_domains.split(',')))
+            json.dumps(allowed_domains.split(","))
+        )
         self.follow_links = eval(json.loads(json.dumps(follow_links)))
         self.exclude_url_params = eval(
-            json.loads(json.dumps(exclude_url_params)))
+            json.loads(json.dumps(exclude_url_params))
+        )
         self.include_url_params = eval(
-            json.loads(json.dumps(include_url_params)))
+            json.loads(json.dumps(include_url_params))
+        )
         self.exclude_url_regex = str(json.loads(json.dumps(exclude_url_regex)))
         if self.exclude_url_regex == "None":
             self.exclude_url_regex = None
@@ -676,19 +709,33 @@ class SEOSitemapSpider(Spider):
         self.css_selectors = eval(json.loads(json.dumps(css_selectors)))
         self.xpath_selectors = eval(json.loads(json.dumps(xpath_selectors)))
 
+    def _meta_param(meta):
+        if meta.get("proxy"):
+            meta["proxy"] = random.choice(meta["proxy"])
+        return meta
+
     def start_requests(self):
         for url in self.start_urls:
             try:
-                yield Request(url, callback=self.parse, errback=self.errback, meta=self.meta)
+                yield Request(
+                    url,
+                    callback=self.parse,
+                    errback=self.errback,
+                    meta=self._meta_param(self.meta),
+                )
             except Exception as e:
                 self.logger.error(repr(e))
 
     def errback(self, failure):
         if not failure.check(scrapy.exceptions.IgnoreRequest):
             self.logger.error(repr(failure))
-            yield {'url': failure.request.url,
-                   'crawl_time': datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S'),
-                   'errors': repr(failure)}
+            yield {
+                "url": failure.request.url,
+                "crawl_time": datetime.datetime.utcnow().strftime(
+                    "%Y-%m-%d %H:%M:%S"
+                ),
+                "errors": repr(failure),
+            }
 
     def parse(self, response):
         links = le.extract_links(response)
@@ -699,84 +746,105 @@ class SEOSitemapSpider(Spider):
 
         if links:
             parsed_links = dict(
-                links_url='@@'.join(link.url for link in links),
-                links_text='@@'.join(link.text for link in links),
-                links_nofollow='@@'.join(str(link.nofollow) for link in links),
+                links_url="@@".join(link.url for link in links),
+                links_text="@@".join(link.text for link in links),
+                links_nofollow="@@".join(str(link.nofollow) for link in links),
             )
         else:
             parsed_links = {}
         if nav_links:
             parsed_nav_links = dict(
-                nav_links_url='@@'.join(link.url for link in nav_links),
-                nav_links_text='@@'.join(link.text for link in nav_links),
-                nav_links_nofollow='@@'.join(str(link.nofollow)
-                                             for link in nav_links),
+                nav_links_url="@@".join(link.url for link in nav_links),
+                nav_links_text="@@".join(link.text for link in nav_links),
+                nav_links_nofollow="@@".join(
+                    str(link.nofollow) for link in nav_links
+                ),
             )
         else:
             parsed_nav_links = {}
         if header_links:
             parsed_header_links = dict(
-                header_links_url='@@'.join(link.url
-                                           for link in header_links),
-                header_links_text='@@'.join(link.text
-                                            for link in header_links),
-                header_links_nofollow='@@'.join(str(link.nofollow)
-                                                for link in header_links),
+                header_links_url="@@".join(link.url for link in header_links),
+                header_links_text="@@".join(link.text for link in header_links),
+                header_links_nofollow="@@".join(
+                    str(link.nofollow) for link in header_links
+                ),
             )
         else:
             parsed_header_links = {}
         if footer_links:
             parsed_footer_links = dict(
-                footer_links_url='@@'.join(link.url for link in footer_links),
-                footer_links_text='@@'.join(link.text
-                                            for link in footer_links),
-                footer_links_nofollow='@@'.join(str(link.nofollow)
-                                                for link in footer_links),
+                footer_links_url="@@".join(link.url for link in footer_links),
+                footer_links_text="@@".join(link.text for link in footer_links),
+                footer_links_nofollow="@@".join(
+                    str(link.nofollow) for link in footer_links
+                ),
             )
         else:
             parsed_footer_links = {}
         if self.css_selectors:
-            css_selectors = {key: '@@'.join(response.css('{}'.format(val)).getall())
-                             for key, val in self.css_selectors.items()}
+            css_selectors = {
+                key: "@@".join(response.css("{}".format(val)).getall())
+                for key, val in self.css_selectors.items()
+            }
             css_selectors = {k: v for k, v in css_selectors.items() if v}
         else:
             css_selectors = {}
 
         if self.xpath_selectors:
-            xpath_selectors = {key: '@@'.join(response.xpath('{}'.format(val)).getall())
-                               for key, val in self.xpath_selectors.items()}
+            xpath_selectors = {
+                key: "@@".join(response.xpath("{}".format(val)).getall())
+                for key, val in self.xpath_selectors.items()
+            }
             xpath_selectors = {k: v for k, v in xpath_selectors.items() if v}
         else:
             xpath_selectors = {}
         canonical = {
-            'canonical': '@@'.join(response.css('link[rel="canonical"]::attr(href)').getall())}
-        canonical = canonical if canonical.get('canonical') else {}
+            "canonical": "@@".join(
+                response.css('link[rel="canonical"]::attr(href)').getall()
+            )
+        }
+        canonical = canonical if canonical.get("canonical") else {}
         alt_href = {
-            'alt_href': '@@'.join(response.css('link[rel=alternate]::attr(href)').getall())}
-        alt_href = alt_href if alt_href.get('alt_href') else {}
+            "alt_href": "@@".join(
+                response.css("link[rel=alternate]::attr(href)").getall()
+            )
+        }
+        alt_href = alt_href if alt_href.get("alt_href") else {}
         alt_hreflang = {
-            'alt_hreflang': '@@'.join(response.css('link[rel=alternate]::attr(hreflang)').getall())}
-        alt_hreflang = alt_hreflang if alt_hreflang.get('alt_hreflang') else {}
+            "alt_hreflang": "@@".join(
+                response.css("link[rel=alternate]::attr(hreflang)").getall()
+            )
+        }
+        alt_hreflang = alt_hreflang if alt_hreflang.get("alt_hreflang") else {}
         og_props = response.xpath(
-            '//meta[starts-with(@property, "og:")]/@property').getall()
+            '//meta[starts-with(@property, "og:")]/@property'
+        ).getall()
         og_content = response.xpath(
-            '//meta[starts-with(@property, "og:")]/@content').getall()
+            '//meta[starts-with(@property, "og:")]/@content'
+        ).getall()
         if og_props and og_content:
             og_props = _numbered_duplicates(og_props)
             open_graph = dict(zip(og_props, og_content))
         else:
             open_graph = {}
         twtr_names = response.xpath(
-            '//meta[starts-with(@name, "twitter:")]/@name').getall()
+            '//meta[starts-with(@name, "twitter:")]/@name'
+        ).getall()
         twtr_content = response.xpath(
-            '//meta[starts-with(@name, "twitter:")]/@content').getall()
+            '//meta[starts-with(@name, "twitter:")]/@content'
+        ).getall()
         if twtr_names and twtr_content:
             twtr_card = dict(zip(twtr_names, twtr_content))
         else:
             twtr_card = {}
         try:
-            ld = [json.loads(s.replace('\r', '')) for s in
-                  response.css('script[type="application/ld+json"]::text').getall()]
+            ld = [
+                json.loads(s.replace("\r", ""))
+                for s in response.css(
+                    'script[type="application/ld+json"]::text'
+                ).getall()
+            ]
             if not ld:
                 jsonld = {}
             else:
@@ -790,9 +858,10 @@ class SEOSitemapSpider(Spider):
                     for norm in ld_norm:
                         jsonld.update(**norm)
         except Exception as e:
-            jsonld = {'jsonld_errors': str(e)}
-            self.logger.exception(' '.join([str(e), str(response.status),
-                                            response.url]))
+            jsonld = {"jsonld_errors": str(e)}
+            self.logger.exception(
+                " ".join([str(e), str(response.status), response.url])
+            )
         page_content = _extract_content(response, **tags_xpaths)
 
         yield dict(
@@ -801,12 +870,16 @@ class SEOSitemapSpider(Spider):
             **open_graph,
             **twtr_card,
             **jsonld,
-            body_text=' '.join(response.xpath(BODY_TEXT_SELECTOR).extract()),
+            body_text=" ".join(response.xpath(BODY_TEXT_SELECTOR).extract()),
             size=len(response.body),
             **css_selectors,
             **xpath_selectors,
-            **{k: '@@'.join(str(val) for val in v) if isinstance(v, list)
-               else v for k, v in response.meta.items()},
+            **{
+                k: "@@".join(str(val) for val in v)
+                if isinstance(v, list)
+                else v
+                for k, v in response.meta.items()
+            },
             status=response.status,
             **parsed_links,
             **parsed_nav_links,
@@ -814,11 +887,15 @@ class SEOSitemapSpider(Spider):
             **parsed_footer_links,
             **images,
             ip_address=str(response.ip_address),
-            crawl_time=datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S'),
-            **{'resp_headers_' + k: v
-               for k, v in response.headers.to_unicode_dict().items()},
-            **{'request_headers_' + k: v
-               for k, v in response.request.headers.to_unicode_dict().items()},
+            crawl_time=datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
+            **{
+                "resp_headers_" + k: v
+                for k, v in response.headers.to_unicode_dict().items()
+            },
+            **{
+                "request_headers_" + k: v
+                for k, v in response.request.headers.to_unicode_dict().items()
+            },
         )
         if self.follow_links:
             next_pages = [link.url for link in links]
@@ -829,22 +906,33 @@ class SEOSitemapSpider(Spider):
                         exclude_url_params=self.exclude_url_params,
                         include_url_params=self.include_url_params,
                         exclude_url_regex=self.exclude_url_regex,
-                        include_url_regex=self.include_url_regex)
+                        include_url_regex=self.include_url_regex,
+                    )
                     if cond:
-                        yield Request(page, callback=self.parse,
-                                      errback=self.errback,meta=self.meta)
+                        yield Request(
+                            page,
+                            callback=self.parse,
+                            errback=self.errback,
+                            meta=self._meta_param(self.meta),
+                        )
                     # if self.skip_url_params and urlparse(page).query:
                     #     continue
 
 
-def crawl(url_list, meta, output_file, follow_links=False,
-          allowed_domains=None,
-          exclude_url_params=None,
-          include_url_params=None,
-          exclude_url_regex=None,
-          include_url_regex=None,
-          css_selectors=None, xpath_selectors=None, custom_settings=None,
-          ):
+def crawl(
+    url_list,
+    output_file,
+    follow_links=False,
+    allowed_domains=None,
+    exclude_url_params=None,
+    include_url_params=None,
+    exclude_url_regex=None,
+    include_url_regex=None,
+    css_selectors=None,
+    xpath_selectors=None,
+    custom_settings=None,
+    meta=None,
+):
     """
     Crawl a website's URLs based on the given :attr:`url_list`
 
@@ -891,7 +979,7 @@ def crawl(url_list, meta, output_file, follow_links=False,
                                  crawl. This ensures that the crawler does not
                                  attempt to crawl the whole web. If not
                                  specified, it defaults to the domains of the
-                                 URLs provided in ``url_list`` and all their 
+                                 URLs provided in ``url_list`` and all their
                                  sub-domains. You can also specify a list of
                                  sub-domains, if you want to only crawl those.
     :Examples:
@@ -926,70 +1014,92 @@ def crawl(url_list, meta, output_file, follow_links=False,
         url_list = [url_list]
     if isinstance(allowed_domains, str):
         allowed_domains = [allowed_domains]
-    if output_file.rsplit('.')[-1] != 'jl':
-        raise ValueError("Please make sure your output_file ends with '.jl'.\n"
-                         "For example:\n"
-                         "{}.jl".format(output_file.rsplit('.', maxsplit=1)[0]))
+    if output_file.rsplit(".")[-1] != "jl":
+        raise ValueError(
+            "Please make sure your output_file ends with '.jl'.\n"
+            "For example:\n"
+            "{}.jl".format(output_file.rsplit(".", maxsplit=1)[0])
+        )
     if (xpath_selectors is not None) and (css_selectors is not None):
         css_xpath = set(xpath_selectors).intersection(css_selectors)
         if css_xpath:
-            raise ValueError("Please make sure you don't set common keys for"
-                             "`css_selectors` and `xpath_selectors`.\n"
-                             "Duplicated keys: {}".format(css_xpath))
+            raise ValueError(
+                "Please make sure you don't set common keys for"
+                "`css_selectors` and `xpath_selectors`.\n"
+                "Duplicated keys: {}".format(css_xpath)
+            )
     for selector in [xpath_selectors, css_selectors]:
         if selector is not None and set(selector).intersection(crawl_headers):
-            raise ValueError("Please make sure you don't use names of default "
-                             "headers. Avoid using any of these as keys: \n"
-                             "{}".format(sorted(crawl_headers)))
+            raise ValueError(
+                "Please make sure you don't use names of default "
+                "headers. Avoid using any of these as keys: \n"
+                "{}".format(sorted(crawl_headers))
+            )
     if allowed_domains is None:
         allowed_domains = {urlparse(url).netloc for url in url_list}
     if exclude_url_params is not None and include_url_params is not None:
         if exclude_url_params is True:
-            raise ValueError("Please make sure you don't exclude and include "
-                             "parameters at the same time.")
-        common_params = set(exclude_url_params).intersection(
-            include_url_params)
+            raise ValueError(
+                "Please make sure you don't exclude and include "
+                "parameters at the same time."
+            )
+        common_params = set(exclude_url_params).intersection(include_url_params)
         if common_params:
-            raise ValueError(f"Please make sure you don't include and exclude "
-                             f"the same parameters.\n"
-                             f"Common parameters entered: "
-                             f"{', '.join(common_params)}")
+            raise ValueError(
+                f"Please make sure you don't include and exclude "
+                f"the same parameters.\n"
+                f"Common parameters entered: "
+                f"{', '.join(common_params)}"
+            )
     if include_url_regex is not None and exclude_url_regex is not None:
         if include_url_regex == exclude_url_regex:
-            raise ValueError(f"Please make sure you don't include and exclude "
-                             f"the same regex pattern.\n"
-                             f"You entered '{include_url_regex}'.")
+            raise ValueError(
+                f"Please make sure you don't include and exclude "
+                f"the same regex pattern.\n"
+                f"You entered '{include_url_regex}'."
+            )
 
     settings_list = []
     if custom_settings is not None:
         for key, val in custom_settings.items():
             if isinstance(val, dict):
-                setting = '='.join([key, json.dumps(val)])
+                setting = "=".join([key, json.dumps(val)])
             else:
-                setting = '='.join([key, str(val)])
-            settings_list.extend(['-s', setting])
+                setting = "=".join([key, str(val)])
+            settings_list.extend(["-s", setting])
 
-    # meta_list = []
-    # if meta is not None:
-    #     meta_list.append(meta)
-
-    command = ['scrapy', 'runspider', spider_path,
-               '-a', 'url_list=' + ','.join(url_list),
-               '-a', 'meta=' + json.dumps(meta),
-               '-a', 'allowed_domains=' + ','.join(allowed_domains),
-               '-a', 'follow_links=' + str(follow_links),
-               '-a', 'exclude_url_params=' + str(exclude_url_params),
-               '-a', 'include_url_params=' + str(include_url_params),
-               '-a', 'exclude_url_regex=' + str(exclude_url_regex),
-               '-a', 'include_url_regex=' + str(include_url_regex),
-               '-a', 'css_selectors=' + str(css_selectors),
-               '-a', 'xpath_selectors=' + str(xpath_selectors),
-               '-o', output_file] + settings_list
-    if len(','.join(url_list)) > MAX_CMD_LENGTH and not follow_links:
+    command = [
+        "scrapy",
+        "runspider",
+        spider_path,
+        "-a",
+        "url_list=" + ",".join(url_list),
+        "-a",
+        "meta=" + json.dumps(meta),
+        "-a",
+        "allowed_domains=" + ",".join(allowed_domains),
+        "-a",
+        "follow_links=" + str(follow_links),
+        "-a",
+        "exclude_url_params=" + str(exclude_url_params),
+        "-a",
+        "include_url_params=" + str(include_url_params),
+        "-a",
+        "exclude_url_regex=" + str(exclude_url_regex),
+        "-a",
+        "include_url_regex=" + str(include_url_regex),
+        "-a",
+        "css_selectors=" + str(css_selectors),
+        "-a",
+        "xpath_selectors=" + str(xpath_selectors),
+        "-o",
+        output_file,
+    ] + settings_list
+    if len(",".join(url_list)) > MAX_CMD_LENGTH and not follow_links:
         split_urls = _split_long_urllist(url_list)
 
         for u_list in split_urls:
-            command[4] = 'url_list=' + ','.join(u_list)
+            command[4] = "url_list=" + ",".join(u_list)
             subprocess.run(command)
     else:
         subprocess.run(command)
