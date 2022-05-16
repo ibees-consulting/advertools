@@ -103,7 +103,7 @@ languages.
 
 >>> seo = knowledge_graph(key=key, query=['seo', 'search engine optimization'], languages=['en', 'es', 'de'])
 >>> seo
-	query	                        languages	resultScore	    result.name	                     result.@type	                                   result.description
+    query	                        languages	resultScore	    result.name	                     result.@type	                                   result.description
 0	search engine optimization	de      	       3587	    Suchmaschinenoptimierung	         ['Thing']                                         nan
 1	search engine optimization	de      	        321	    Lokale Suchmaschinenoptimierung	 ['Thing']                                         nan
 2	search engine optimization	de      	        252	    Suchmaschinenmarketing	         ['Thing']                                         nan
@@ -142,10 +142,18 @@ import requests
 
 from advertools.serp import _dict_product
 
-param_regex = '^query$|^ids$|^languages$|^types$|^prefix$|^limit$'
+param_regex = "^query$|^ids$|^languages$|^types$|^prefix$|^limit$"
 
-def knowledge_graph(key, query=None, ids=None, languages=None, types=None,
-                    prefix=None, limit=None):
+
+def knowledge_graph(
+    key,
+    query=None,
+    ids=None,
+    languages=None,
+    types=None,
+    prefix=None,
+    limit=None,
+):
     """Query Google's Knowledge Graph with any combination of parameters.
 
     Note that Google's documentation states that "This API is not suitable for
@@ -174,9 +182,8 @@ def knowledge_graph(key, query=None, ids=None, languages=None, types=None,
     https://developers.google.com/knowledge-graph/reference/rest/v1
     """
     params = locals()
-    base_url = 'https://kgsearch.googleapis.com/v1/entities:search?'
-    supplied_params = {k: v for k, v in params.items()
-                       if params[k] is not None}
+    base_url = "https://kgsearch.googleapis.com/v1/entities:search?"
+    supplied_params = {k: v for k, v in params.items() if params[k] is not None}
     for p in supplied_params:
         if isinstance(supplied_params[p], (str, int)):
             supplied_params[p] = [supplied_params[p]]
@@ -187,20 +194,23 @@ def knowledge_graph(key, query=None, ids=None, languages=None, types=None,
     def single_request(param):
         nonlocal result_df
         resp = requests.get(base_url, params=param)
-        param_log = ', '.join([k + '=' + str(v) for k, v in param.items()])
-        logging.info(msg='Requesting: ' + param_log)
-        df = pd.json_normalize(resp.json(), record_path='itemListElement')
-        del param['key']
-        param_columns = {k: [v] if df.empty else v
-                         for k, v in param.items()}
+        param_log = ", ".join([k + "=" + str(v) for k, v in param.items()])
+        logging.info(msg="Requesting: " + param_log)
+        df = pd.json_normalize(resp.json(), record_path="itemListElement")
+        del param["key"]
+        param_columns = {k: [v] if df.empty else v for k, v in param.items()}
         df = df.assign(**param_columns)
         result_df = pd.concat([result_df, df], ignore_index=True)
 
     with futures.ThreadPoolExecutor(max_workers=16) as executor:
         executor.map(single_request, params_list)
 
-    reordered_df = pd.concat([result_df.filter(regex=param_regex),
-                              result_df.filter(regex=f'^(?!{param_regex})')],
-                             axis=1)
-    reordered_df['query_time'] = pd.Timestamp.utcnow()
+    reordered_df = pd.concat(
+        [
+            result_df.filter(regex=param_regex),
+            result_df.filter(regex=f"^(?!{param_regex})"),
+        ],
+        axis=1,
+    )
+    reordered_df["query_time"] = pd.Timestamp.utcnow()
     return reordered_df

@@ -168,36 +168,36 @@ def url_to_df(urls, decode=True):
         hostname = split.hostname if split.hostname != split.netloc else None
         split = split._asdict()
         if hostname:
-            split['hostname'] = hostname
+            split["hostname"] = hostname
         if port:
-            split['port'] = port
-        parsed_query = parse_qs(split['query'])
-        parsed_query = {'query_' + key: '@@'.join(val)
-                        for key, val in parsed_query.items()}
+            split["port"] = port
+        parsed_query = parse_qs(split["query"])
+        parsed_query = {
+            "query_" + key: "@@".join(val) for key, val in parsed_query.items()
+        }
         split.update(**parsed_query)
-        dirs = split['path'].strip('/').split('/')
+        dirs = split["path"].strip("/").split("/")
         if dirs[0]:
-            dir_cols = {'dir_{}'.format(n): d for n, d in enumerate(dirs, 1)}
+            dir_cols = {"dir_{}".format(n): d for n, d in enumerate(dirs, 1)}
             split.update(**dir_cols)
         split_list.append(split)
     df = pd.DataFrame(split_list)
 
-    query_df = df.filter(regex='query_')
+    query_df = df.filter(regex="query_")
     if not query_df.empty:
-        sorted_q_params = (query_df
-                           .notna()
-                           .mean()
-                           .sort_values(ascending=False).index)
+        sorted_q_params = (
+            query_df.notna().mean().sort_values(ascending=False).index
+        )
         query_df = query_df[sorted_q_params]
         df = df.drop(query_df.columns, axis=1)
-    dirs_df = df.filter(regex='^dir_')
+    dirs_df = df.filter(regex="^dir_")
     if not dirs_df.empty:
         df = df.drop(dirs_df.columns, axis=1)
-        dirs_df = (dirs_df
-                   .assign(last_dir=dirs_df
-                   .fillna(method='ffill', axis=1)
-                   .iloc[:, -1:]
-                   .squeeze()))
+        dirs_df = dirs_df.assign(
+            last_dir=dirs_df.fillna(method="ffill", axis=1)
+            .iloc[:, -1:]
+            .squeeze()
+        )
     df = pd.concat([df, dirs_df, query_df], axis=1)
-    df.insert(0, 'url', [decode(url) for url in urls])
+    df.insert(0, "url", [decode(url) for url in urls])
     return df

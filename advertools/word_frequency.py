@@ -184,8 +184,14 @@ import advertools as adv
 from advertools.word_tokenize import word_tokenize
 
 
-def word_frequency(text_list, num_list=None, phrase_len=1, regex=None,
-                   rm_words=adv.stopwords['english'], extra_info=False):
+def word_frequency(
+    text_list,
+    num_list=None,
+    phrase_len=1,
+    regex=None,
+    rm_words=adv.stopwords["english"],
+    extra_info=False,
+):
     """Count the absolute as well as the weighted frequency of words
     in :attr:`text_list` (based on :attr:`num_list`).
 
@@ -271,35 +277,44 @@ def word_frequency(text_list, num_list=None, phrase_len=1, regex=None,
         num_list = [1 for _ in range(len(text_list))]
     if isinstance(regex, str):
         regex = re.compile(regex)
-        text_list = [' '.join(regex.findall(text)) for text in text_list]
+        text_list = [" ".join(regex.findall(text)) for text in text_list]
 
     word_freq = defaultdict(lambda: [0, 0])
 
-    for text, num in zip(word_tokenize(text_list, phrase_len=phrase_len),
-                         num_list):
+    for text, num in zip(
+        word_tokenize(text_list, phrase_len=phrase_len), num_list
+    ):
         for word in text:
             if word.lower() in rm_words:
                 continue
             word_freq[word.lower()][0] += 1
             word_freq[word.lower()][1] += num
 
-    columns = ['abs_freq', 'wtd_freq']
+    columns = ["abs_freq", "wtd_freq"]
 
-    abs_wtd_df = (pd.DataFrame.from_dict(word_freq, orient='index',
-                                         columns=columns)
-                  .sort_values('wtd_freq', ascending=False)
-                  .assign(rel_value=lambda df: df['wtd_freq'] / df['abs_freq'])
-                  .round())
+    abs_wtd_df = (
+        pd.DataFrame.from_dict(word_freq, orient="index", columns=columns)
+        .sort_values("wtd_freq", ascending=False)
+        .assign(rel_value=lambda df: df["wtd_freq"] / df["abs_freq"])
+        .round()
+    )
     if extra_info:
-        abs_wtd_df.insert(1, 'abs_perc', value=abs_wtd_df['abs_freq'] /
-                          abs_wtd_df['abs_freq'].sum())
-        abs_wtd_df.insert(2, 'abs_perc_cum', abs_wtd_df['abs_perc'].cumsum())
-        abs_wtd_df.insert(4, 'wtd_freq_perc', abs_wtd_df['wtd_freq'] /
-                          abs_wtd_df['wtd_freq'].sum())
-        abs_wtd_df.insert(5, 'wtd_freq_perc_cum',
-                          abs_wtd_df['wtd_freq_perc'].cumsum())
+        abs_wtd_df.insert(
+            1,
+            "abs_perc",
+            value=abs_wtd_df["abs_freq"] / abs_wtd_df["abs_freq"].sum(),
+        )
+        abs_wtd_df.insert(2, "abs_perc_cum", abs_wtd_df["abs_perc"].cumsum())
+        abs_wtd_df.insert(
+            4,
+            "wtd_freq_perc",
+            abs_wtd_df["wtd_freq"] / abs_wtd_df["wtd_freq"].sum(),
+        )
+        abs_wtd_df.insert(
+            5, "wtd_freq_perc_cum", abs_wtd_df["wtd_freq_perc"].cumsum()
+        )
 
-    abs_wtd_df = abs_wtd_df.reset_index().rename(columns={'index': 'word'})
+    abs_wtd_df = abs_wtd_df.reset_index().rename(columns={"index": "word"})
     if set(num_list) == {1}:
-        abs_wtd_df = abs_wtd_df.drop(['wtd_freq', 'rel_value'], axis=1)
+        abs_wtd_df = abs_wtd_df.drop(["wtd_freq", "rel_value"], axis=1)
     return abs_wtd_df

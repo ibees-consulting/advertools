@@ -8,8 +8,14 @@ URL Builders
 import urllib
 
 
-def url_utm_ga(url, utm_source, utm_medium=None, utm_campaign=None,
-               utm_content=None, utm_term=None):
+def url_utm_ga(
+    url,
+    utm_source,
+    utm_medium=None,
+    utm_campaign=None,
+    utm_content=None,
+    utm_term=None,
+):
     """Generate a URL with UTM codes for your campaigns.
 
     :param str url: a valid URL, required
@@ -30,6 +36,6 @@ def url_utm_ga(url, utm_source, utm_medium=None, utm_campaign=None,
     ...            utm_campaign='campaign*name&^%',utm_content='728x90')
     'mysite.com?utm_content=728x90&utm_campaign=campaign%2Aname%26%5E%25&utm_medium=THE+MEDIUM%21%21&utm_source=the+source'
     """
-    url += '?'
-    params = {k: v for k, v in locals().items() if k != 'url'}
+    url += "?"
+    params = {k: v for k, v in locals().items() if k != "url"}
     return url + urllib.parse.urlencode({k: v for k, v in params.items() if v})

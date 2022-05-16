@@ -101,8 +101,9 @@ def ad_create(template, replacements, fallback, max_len=30, capitalize=True):
     ValueError: template + fallback should be <= 20 chars
     """
     if len(template.format(fallback)) > max_len:
-        raise ValueError('template + fallback should be <= '
-                         + str(max_len) + ' chars')
+        raise ValueError(
+            "template + fallback should be <= " + str(max_len) + " chars"
+        )
     final_ad = []
     for rep in replacements:
         if len(template.format(rep)) <= max_len:

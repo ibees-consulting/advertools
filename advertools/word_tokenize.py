@@ -66,5 +66,10 @@ def word_tokenize(text_list, phrase_len=2):
     split = [text.lower().split() for text in text_list]
     split = [[word.strip(WORD_DELIM) for word in text] for text in split]
 
-    return [[' '.join(s[i:i + phrase_len])
-             for i in range(len(s) - phrase_len + 1)] for s in split]
+    return [
+        [
+            " ".join(s[i : i + phrase_len])
+            for i in range(len(s) - phrase_len + 1)
+        ]
+        for s in split
+    ]

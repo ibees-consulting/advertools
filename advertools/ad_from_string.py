@@ -162,8 +162,9 @@ end up having an extra space that is not used:
 import string
 
 
-def ad_from_string(s, slots=(30, 30, 30, 90, 90, 15, 15), sep=None,
-                   capitalize=False):
+def ad_from_string(
+    s, slots=(30, 30, 30, 90, 90, 15, 15), sep=None, capitalize=False
+):
     """Convert string :attr:`s` to an ad by splitting it into groups of words.
     Each group would have a length of at most the allowed length for that slot.
 
@@ -200,18 +201,22 @@ def ad_from_string(s, slots=(30, 30, 30, 90, 90, 15, 15), sep=None,
      '', '', '', '', '', '']
     """
     str_words = s.split(sep=sep)
-    text_ad = ['' for x in range(len(slots)+1)]
+    text_ad = ["" for x in range(len(slots) + 1)]
     counter = 0
 
     for i, slot in enumerate(slots):
         while counter <= len(str_words) - 1:
             if len(text_ad[i] + str_words[counter]) + 1 > slot:
                 break
-            text_ad[i] += (' ' + str_words[counter] if text_ad[i]
-                           else str_words[counter])
+            text_ad[i] += (
+                " " + str_words[counter] if text_ad[i] else str_words[counter]
+            )
             counter += 1
 
-    text_ad[-1] = (sep.join(str_words[counter:])
-                   if sep is not None else ' '.join(str_words[counter:]))
+    text_ad[-1] = (
+        sep.join(str_words[counter:])
+        if sep is not None
+        else " ".join(str_words[counter:])
+    )
 
     return [string.capwords(x) if capitalize else x for x in text_ad]

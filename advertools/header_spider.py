@@ -81,8 +81,6 @@ Here are some of the common reasons for using a ``HEAD`` crawler:
 import datetime
 import json
 import subprocess
-
-import pandas as pd
 import scrapy
 from scrapy import Request, Spider
 
@@ -90,57 +88,71 @@ import advertools as adv
 from advertools import __version__ as adv_version
 from advertools.spider import MAX_CMD_LENGTH, _split_long_urllist
 
-header_spider_path = adv.__path__[0] + '/header_spider.py'
+header_spider_path = adv.__path__[0] + "/header_spider.py"
 
-user_agent = f'advertools/{adv_version}'
+user_agent = f"advertools/{adv_version}"
 
 
 class HeadersSpider(Spider):
-    name = 'headers_spider'
+    name = "headers_spider"
     custom_settings = {
-        'USER_AGENT': user_agent,
-        'ROBOTSTXT_OBEY': True,
-        'HTTPERROR_ALLOW_ALL': True,
+        "USER_AGENT": user_agent,
+        "ROBOTSTXT_OBEY": True,
+        "HTTPERROR_ALLOW_ALL": True,
     }
 
     def __init__(self, url_list=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.start_urls = json.loads(json.dumps(url_list.split(',')))
+        self.start_urls = json.loads(json.dumps(url_list.split(",")))
 
     def start_requests(self):
         for url in self.start_urls:
             try:
-                yield Request(url, callback=self.parse, errback=self.errback,
-                              method='HEAD')
+                yield Request(
+                    url,
+                    callback=self.parse,
+                    errback=self.errback,
+                    method="HEAD",
+                )
             except Exception as e:
                 self.logger.error(repr(e))
 
     def errback(self, failure):
         if not failure.check(scrapy.exceptions.IgnoreRequest):
             self.logger.error(repr(failure))
-            now = datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
-            yield {'url': failure.request.url,
-                   'crawl_time': now,
-                   'errors': repr(failure)}
+            now = datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+            yield {
+                "url": failure.request.url,
+                "crawl_time": now,
+                "errors": repr(failure),
+            }
 
     def parse(self, response):
-        now = datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
+        now = datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
         yield {
-            'url': response.url,
-            'crawl_time': now,
-            'status': response.status,
-            **{k: '@@'.join(str(val) for val in v) if isinstance(v, list)
-               else v for k, v in response.meta.items()},
-            'protocol': response.protocol,
-            'body': response.text or None,
-            **{'resp_headers_' + k: v
-               for k, v in response.headers.to_unicode_dict().items()},
-            **{'request_headers_' + k: v
-               for k, v in response.request.headers.to_unicode_dict().items()},
+            "url": response.url,
+            "crawl_time": now,
+            "status": response.status,
+            **{
+                k: "@@".join(str(val) for val in v)
+                if isinstance(v, list)
+                else v
+                for k, v in response.meta.items()
+            },
+            "protocol": response.protocol,
+            "body": response.text or None,
+            **{
+                "resp_headers_" + k: v
+                for k, v in response.headers.to_unicode_dict().items()
+            },
+            **{
+                "request_headers_" + k: v
+                for k, v in response.request.headers.to_unicode_dict().items()
+            },
         }
 
 
-def crawl_headers(url_list, output_file,  custom_settings=None):
+def crawl_headers(url_list, output_file, custom_settings=None):
     """Crawl a list of URLs using the HEAD method.
 
     This function helps in analyzing a set of URLs by getting status codes,
@@ -188,26 +200,34 @@ def crawl_headers(url_list, output_file,  custom_settings=None):
     """
     if isinstance(url_list, str):
         url_list = [url_list]
-    if output_file.rsplit('.')[-1] != 'jl':
-        raise ValueError("Please make sure your output_file ends with '.jl'.\n"
-                         "For example:\n"
-                         f"{output_file.rsplit('.', maxsplit=1)[0]}.jl")
+    if output_file.rsplit(".")[-1] != "jl":
+        raise ValueError(
+            "Please make sure your output_file ends with '.jl'.\n"
+            "For example:\n"
+            f"{output_file.rsplit('.', maxsplit=1)[0]}.jl"
+        )
     settings_list = []
     if custom_settings is not None:
         for key, val in custom_settings.items():
             if isinstance(val, dict):
-                setting = '='.join([key, json.dumps(val)])
+                setting = "=".join([key, json.dumps(val)])
             else:
-                setting = '='.join([key, str(val)])
-            settings_list.extend(['-s', setting])
+                setting = "=".join([key, str(val)])
+            settings_list.extend(["-s", setting])
 
-    command = ['scrapy', 'runspider', header_spider_path,
-               '-a', 'url_list=' + ','.join(url_list),
-               '-o', output_file] + settings_list
-    if len(','.join(url_list)) > MAX_CMD_LENGTH:
+    command = [
+        "scrapy",
+        "runspider",
+        header_spider_path,
+        "-a",
+        "url_list=" + ",".join(url_list),
+        "-o",
+        output_file,
+    ] + settings_list
+    if len(",".join(url_list)) > MAX_CMD_LENGTH:
         split_urls = _split_long_urllist(url_list)
         for u_list in split_urls:
-            command[4] = 'url_list=' + ','.join(u_list)
+            command[4] = "url_list=" + ",".join(u_list)
             subprocess.run(command)
     else:
         subprocess.run(command)

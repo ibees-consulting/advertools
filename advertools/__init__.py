@@ -1,9 +1,8 @@
-
 """Digital Marketing productivity and analysis tools."""
 
 __author__ = """Elias Dabbas"""
-__email__ = 'eliasdabbas@gmail.com'
-__version__ = '0.14.0a8'
+__email__ = "eliasdabbas@gmail.com"
+__version__ = "0.14.0a8"
 
 from advertools.ad_create import ad_create
 from advertools.ad_from_string import ad_from_string
@@ -12,8 +11,7 @@ from advertools.extract import *
 from advertools.header_spider import crawl_headers
 from advertools.knowledge_graph import knowledge_graph
 from advertools.kw_generate import *
-from advertools.logs import (LOG_FIELDS, LOG_FORMATS, crawllogs_to_df,
-                             logs_to_df)
+from advertools.logs import LOG_FIELDS, LOG_FORMATS, crawllogs_to_df, logs_to_df
 from advertools.regex import *
 from advertools.reverse_dns_lookup import reverse_dns_lookup
 from advertools.robotstxt import *
