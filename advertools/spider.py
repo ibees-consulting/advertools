@@ -709,9 +709,11 @@ class SEOSitemapSpider(Spider):
         self.css_selectors = eval(json.loads(json.dumps(css_selectors)))
         self.xpath_selectors = eval(json.loads(json.dumps(xpath_selectors)))
 
-    def _meta_param(meta):
+    def _meta_param(self, meta):
         if meta.get("proxy"):
+            print(meta["proxy"], "meta['proxy'_b4")
             meta["proxy"] = random.choice(meta["proxy"])
+            print(meta["proxy"], "meta['proxy'_after")
         return meta
 
     def start_requests(self):
@@ -723,6 +725,8 @@ class SEOSitemapSpider(Spider):
                     errback=self.errback,
                     meta=self._meta_param(self.meta),
                 )
+                # print(self.meta,"self_meta")
+                # print(self._meta_param(self.meta),"rand_meta")
             except Exception as e:
                 self.logger.error(repr(e))
 
@@ -913,7 +917,7 @@ class SEOSitemapSpider(Spider):
                             page,
                             callback=self.parse,
                             errback=self.errback,
-                            meta=self._meta_param(self.meta),
+                            meta=self.meta,
                         )
                     # if self.skip_url_params and urlparse(page).query:
                     #     continue

@@ -275,17 +275,17 @@ import pandas as pd
 # debugpy.listen(3000)
 # print("Waiting for debugger attach")
 # debugpy.wait_for_client()
-from advertools.spider import SEOSitemapSpider
+# from advertools.spider import SEOSitemapSpider
 
 
-class DmozSpider(SEOSitemapSpider):
-    name = "dmoz"
+# class DmozSpider(SEOSitemapSpider):
+#     name = "dmoz"
 
-    def errback(self, failure):
-        print("Error back")
+#     def errback(self, failure):
+#         print("Error back")
 
-    def parse(self, response):
-        print("Response")
+#     def parse(self, response):
+#         print("Response")
 
 
 # 5678 is the default attach port in the VS Code debug configurations. Unless a host and port are specified, host defaults to 127.0.0.1
@@ -305,15 +305,19 @@ class DmozSpider(SEOSitemapSpider):
 # Spider.start_requests = my_start_requests
 
 
-url_list = ["https://www.example.com"]
+url_list = [
+    "https://www.example.com",
+    "https://www.packhit.com",
+    "https://www.sleekboxes.com",
+]
 output_file = "/home/odoo/main-dev/odoon/scraping/advertools/advertools/code_recipes/example_crawl_1.jl"
 # meta = {"proxy": "http://lljlukte-GB-NL-rotate:3r3g8quzsjp1@p.webshare.io:80"}
 meta = {
     "proxy": [
-        "http://127.0.0.1:3128",
-        "http://127.0.0.2:3128",
-        "http://127.0.0.3:3128",
-        "http://127.0.0.4:3128",
+        "http://lljlukte-GB-NL-rotate:3r3g8quzsjp1@p.webshare.io:80",
+        "http://lljlukte-GB-NL-rotate:3r3g8quzsjp1@p.webshare.io:80",
+        "http://lljlukte-GB-NL-rotate:3r3g8quzsjp1@p.webshare.io:80",
+        "http://lljlukte-GB-NL-rotate:3r3g8quzsjp1@p.webshare.io:80",
     ]
 }
 # proxy_dict = dict((key, val) for key, val in meta.items() if key =="proxy")
