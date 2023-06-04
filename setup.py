@@ -15,6 +15,8 @@ requirements = [
     'pandas>=1.1.0',
     'pyasn1>=0.4',
     'scrapy>=2.5.0',
+    'playwright>=1.15',
+    'scrapy-playwright>=0.0.26',
     'twython>=3.8.0',
     'pyarrow>=5.0.0',
 ]
