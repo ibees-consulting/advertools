@@ -277,7 +277,7 @@ class SEOSitemapSpider(Spider):
     def start_requests(self):
         for url in self.start_urls:
             try:
-                yield Request(url, callback=self.parse, errback=self.errback)
+                yield Request(url, meta={'playwright': True}, callback=self.parse, errback=self.errback)
             except Exception as e:
                 self.logger.error(repr(e))
 
@@ -473,6 +473,15 @@ def plw_crawl(url_list, output_file, follow_links=False,
                              f"the same regex pattern.\n"
                              f"You entered '{include_url_regex}'.")
 
+    # Add download handlers for playwright
+    custom_settings = custom_settings or {}
+    custom_settings.update({
+        "DOWNLOAD_HANDLERS": {
+            "http": "scrapy_playwright.handler.ScrapyPlaywrightDownloadHandler",
+            "https": "scrapy_playwright.handler.ScrapyPlaywrightDownloadHandler",
+        },
+        "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
+    })
     settings_list = []
     if custom_settings is not None:
         for key, val in custom_settings.items():
