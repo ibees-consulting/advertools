@@ -19,7 +19,7 @@ from advertools.reverse_dns_lookup import reverse_dns_lookup
 from advertools.robotstxt import *
 from advertools.sitemaps import sitemap_to_df
 from advertools.spider import crawl
-from advertools.plw_spider import crawl
+from advertools.plw_spider import plw_crawl
 from advertools.stopwords import stopwords
 from advertools.url_builders import url_utm_ga
 from advertools.urlytics import url_to_df
