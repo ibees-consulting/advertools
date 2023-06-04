@@ -24,7 +24,7 @@ else:
 
 from advertools import __version__ as adv_version
 
-spider_path = adv.__path__[0] + '/spider.py'
+spider_path = adv.__path__[0] + '/plw_spider.py'
 
 user_agent = f'advertools/{adv_version}'
 
@@ -238,8 +238,8 @@ def _extract_content(resp, **tags_xpaths):
     return d
 
 
-class SEOSitemapSpider(Spider):
-    name = 'seo_spider'
+class SEOSitemapPlwSpider(Spider):
+    name = 'seo_plw_spider'
     follow_links = False
     skip_url_params = False
     css_selectors = {}
@@ -258,7 +258,8 @@ class SEOSitemapSpider(Spider):
                  exclude_url_regex=None,
                  include_url_regex=None,
                  css_selectors=None,
-                 xpath_selectors=None, *args, **kwargs):
+                 xpath_selectors=None,
+                meta=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.start_urls = json.loads(json.dumps(url_list.split(',')))
         self.allowed_domains = json.loads(json.dumps(allowed_domains.split(',')))
@@ -273,11 +274,12 @@ class SEOSitemapSpider(Spider):
             self.include_url_regex = None
         self.css_selectors = eval(json.loads(json.dumps(css_selectors)))
         self.xpath_selectors = eval(json.loads(json.dumps(xpath_selectors)))
+        self.meta = json.loads(meta)
 
     def start_requests(self):
         for url in self.start_urls:
             try:
-                yield Request(url, meta={'playwright': True}, callback=self.parse, errback=self.errback)
+                yield Request(url, meta=self.meta, callback=self.parse, errback=self.errback)
             except Exception as e:
                 self.logger.error(repr(e))
 
@@ -434,7 +436,7 @@ def plw_crawl(url_list, output_file, follow_links=False,
           include_url_params=None,
           exclude_url_regex=None,
           include_url_regex=None,
-          css_selectors=None, xpath_selectors=None, custom_settings=None,
+          css_selectors=None, xpath_selectors=None, custom_settings=None, meta=None
           ):
     if isinstance(url_list, str):
         url_list = [url_list]
@@ -473,6 +475,9 @@ def plw_crawl(url_list, output_file, follow_links=False,
                              f"the same regex pattern.\n"
                              f"You entered '{include_url_regex}'.")
 
+    # default meta data if none provided
+    if meta is None:
+        meta = {"playwright": True}
     # Add download handlers for playwright
     custom_settings = custom_settings or {}
     custom_settings.update({
@@ -485,10 +490,10 @@ def plw_crawl(url_list, output_file, follow_links=False,
     settings_list = []
     if custom_settings is not None:
         for key, val in custom_settings.items():
-            if isinstance(val, (dict, list, set, tuple)):
-                setting = '='.join([key, json.dumps(val)])
+            if isinstance(val, str):
+                setting = f"{key}={val}"
             else:
-                setting = '='.join([key, str(val)])
+                setting = f"{key}={json.dumps(val)}"
             settings_list.extend(['-s', setting])
 
     command = ['scrapy', 'runspider', spider_path,
@@ -501,6 +506,7 @@ def plw_crawl(url_list, output_file, follow_links=False,
                '-a', 'include_url_regex=' + str(include_url_regex),
                '-a', 'css_selectors=' + str(css_selectors),
                '-a', 'xpath_selectors=' + str(xpath_selectors),
+               '-a', 'meta=' + json.dumps(meta),
                '-o', output_file] + settings_list
     if len(','.join(url_list)) > MAX_CMD_LENGTH:
         split_urls = _split_long_urllist(url_list)
