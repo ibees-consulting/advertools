@@ -370,7 +370,7 @@ from scrapy_playwright.page import PageMethod
 import advertools as adv
 import datetime
 
-url_list = ['https://example.com', "https://www.packhit.com/about-us/"]
+url_list = ['https://example.com', "https://quotes.toscrape.com"]
 
 # Define PageMethod instances here
 meta = {
