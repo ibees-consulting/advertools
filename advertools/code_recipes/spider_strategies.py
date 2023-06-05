@@ -366,3 +366,33 @@ False                 canonical_parent     name(//link[@rel='canonical']/..)    
 ====================  ===================  =================================================================  ===============================================================================================================
 
 """
+from scrapy_playwright.page import PageMethod
+import advertools as adv
+
+url_list = ['https://www.packhit.com/contactus']
+
+# Define PageMethod instances here
+meta = {
+    "playwright": True,
+    "playwright_page_methods": [
+        PageMethod("screenshot", path="example.png", full_page=True),
+    ],
+}
+
+custom_settings = {
+    'LOG_LEVEL': 'DEBUG',
+    "DOWNLOAD_HANDLERS": {
+        "http": "scrapy_playwright.handler.ScrapyPlaywrightDownloadHandler",
+        "https": "scrapy_playwright.handler.ScrapyPlaywrightDownloadHandler",
+    },
+    "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
+    'PLAYWRIGHT_DEFAULT_NAVIGATION_TIMEOUT': '100000',
+    "PLAYWRIGHT_BROWSER_TYPE": "firefox",
+}
+
+adv.plw_crawl(
+    url_list=url_list,
+    output_file='output.jl',
+    meta=meta,
+    custom_settings=custom_settings
+)

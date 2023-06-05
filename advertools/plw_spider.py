@@ -1,11 +1,14 @@
 import datetime
 import json
 import logging
+from pathlib import Path
 import platform
 import re
-import subprocess
 from functools import reduce
 from urllib.parse import parse_qs, urlparse, urlsplit
+from scrapy.crawler import CrawlerProcess
+from scrapy.utils.project import get_project_settings
+from scrapy.extensions.feedexport import FeedExporter
 
 import pandas as pd
 import scrapy
@@ -14,8 +17,10 @@ from scrapy import Request
 from scrapy.linkextractors import LinkExtractor
 from scrapy.spiders import Spider
 from scrapy.utils.response import get_base_url
+from scrapy_playwright.page import PageMethod
 
 import advertools as adv
+
 
 if int(pd.__version__[0]) >= 1:
     from pandas import json_normalize
@@ -259,7 +264,7 @@ class SEOSitemapPlwSpider(Spider):
                  include_url_regex=None,
                  css_selectors=None,
                  xpath_selectors=None,
-                meta=None, *args, **kwargs):
+                 meta=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.start_urls = json.loads(json.dumps(url_list.split(',')))
         self.allowed_domains = json.loads(json.dumps(allowed_domains.split(',')))
@@ -277,6 +282,11 @@ class SEOSitemapPlwSpider(Spider):
         self.meta = json.loads(meta)
 
     def start_requests(self):
+        # Reconstruct PageMethod instances
+        self.meta["playwright_page_methods"] = [
+            PageMethod(data.pop("method"), **data)
+            for data in self.meta["playwright_page_methods"]
+        ]
         for url in self.start_urls:
             try:
                 yield Request(url, meta=self.meta, callback=self.parse, errback=self.errback)
@@ -290,13 +300,12 @@ class SEOSitemapPlwSpider(Spider):
                    'crawl_time': datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S'),
                    'errors': repr(failure)}
 
-    def parse(self, response):
+    async def parse(self, response):
         links = le.extract_links(response)
         nav_links = le_nav.extract_links(response)
         header_links = le_header.extract_links(response)
         footer_links = le_footer.extract_links(response)
         images = _extract_images(response)
-
         if links:
             parsed_links = dict(
                 links_url='@@'.join(link.url for link in links),
@@ -387,6 +396,7 @@ class SEOSitemapPlwSpider(Spider):
             self.logger.exception(' '.join([str(e), str(response.status),
                                             response.url]))
         page_content = _extract_content(response, **tags_xpaths)
+        
 
         yield dict(
             url=response.request.url,
@@ -399,7 +409,7 @@ class SEOSitemapPlwSpider(Spider):
             **css_selectors,
             **xpath_selectors,
             **{k: '@@'.join(str(val) for val in v) if isinstance(v, list)
-               else v for k, v in response.meta.items()},
+               else v for k, v in response.meta.items() if k != 'playwright_page_methods'},
             status=response.status,
             **parsed_links,
             **parsed_nav_links,
@@ -424,7 +434,7 @@ class SEOSitemapPlwSpider(Spider):
                         exclude_url_regex=self.exclude_url_regex,
                         include_url_regex=self.include_url_regex)
                     if cond:
-                        yield Request(page, callback=self.parse,
+                        yield Request(page, callback=self.parse, meta=self.meta,
                                       errback=self.errback)
                     # if self.skip_url_params and urlparse(page).query:
                     #     continue
@@ -479,14 +489,6 @@ def plw_crawl(url_list, output_file, follow_links=False,
     if meta is None:
         meta = {"playwright": True}
     # Add download handlers for playwright
-    custom_settings = custom_settings or {}
-    custom_settings.update({
-        "DOWNLOAD_HANDLERS": {
-            "http": "scrapy_playwright.handler.ScrapyPlaywrightDownloadHandler",
-            "https": "scrapy_playwright.handler.ScrapyPlaywrightDownloadHandler",
-        },
-        "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
-    })
     settings_list = []
     if custom_settings is not None:
         for key, val in custom_settings.items():
@@ -494,25 +496,41 @@ def plw_crawl(url_list, output_file, follow_links=False,
                 setting = f"{key}={val}"
             else:
                 setting = f"{key}={json.dumps(val)}"
-            settings_list.extend(['-s', setting])
+            settings_list.append(setting)
 
-    command = ['scrapy', 'runspider', spider_path,
-               '-a', 'url_list=' + ','.join(url_list),
-               '-a', 'allowed_domains=' + ','.join(allowed_domains),
-               '-a', 'follow_links=' + str(follow_links),
-               '-a', 'exclude_url_params=' + str(exclude_url_params),
-               '-a', 'include_url_params=' + str(include_url_params),
-               '-a', 'exclude_url_regex=' + str(exclude_url_regex),
-               '-a', 'include_url_regex=' + str(include_url_regex),
-               '-a', 'css_selectors=' + str(css_selectors),
-               '-a', 'xpath_selectors=' + str(xpath_selectors),
-               '-a', 'meta=' + json.dumps(meta),
-               '-o', output_file] + settings_list
-    if len(','.join(url_list)) > MAX_CMD_LENGTH:
-        split_urls = _split_long_urllist(url_list)
+    # Convert PageMethod objects into dictionaries
+    meta["playwright_page_methods"] = [
+        {"method": method.method, **method.kwargs}
+        for method in meta["playwright_page_methods"]
+    ]
 
-        for u_list in split_urls:
-            command[4] = 'url_list=' + ','.join(u_list)
-            subprocess.run(command)
-    else:
-        subprocess.run(command)
+    # Get the Scrapy project settings
+    settings = get_project_settings()
+    # Configure the item pipelines
+
+    # Update the settings with your custom settings
+    settings.setdict(custom_settings, priority='cmdline')
+
+    # Set the output file and other feed exporter settings
+    settings.set('FEEDS', {output_file: {'format': 'jsonlines'}})
+
+    # Create a dictionary with the spider arguments
+    spider_arguments = {
+        'url_list': ','.join(url_list),
+        'allowed_domains': ','.join(allowed_domains),
+        'follow_links': str(follow_links),
+        'exclude_url_params': str(exclude_url_params),
+        'include_url_params': str(include_url_params),
+        'exclude_url_regex': str(exclude_url_regex),
+        'include_url_regex': str(include_url_regex),
+        'css_selectors': str(css_selectors),
+        'xpath_selectors': str(xpath_selectors),
+        'meta': json.dumps(meta),
+    }
+    # Create the CrawlerProcess
+    process = CrawlerProcess(settings)
+
+    # Add the spider with the provided arguments
+    process.crawl(SEOSitemapPlwSpider, **spider_arguments)
+    # Start the crawler
+    process.start()

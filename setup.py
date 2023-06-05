@@ -14,7 +14,7 @@ with open('HISTORY.rst') as history_file:
 requirements = [
     'pandas>=1.1.0',
     'pyasn1>=0.4',
-    'scrapy>=2.5.0',
+    'scrapy>=2.9.0',
     'playwright>=1.15',
     'scrapy-playwright>=0.0.26',
     'twython>=3.8.0',
