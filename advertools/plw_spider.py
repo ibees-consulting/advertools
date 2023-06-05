@@ -300,7 +300,7 @@ class SEOSitemapPlwSpider(Spider):
                    'crawl_time': datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S'),
                    'errors': repr(failure)}
 
-    async def parse(self, response):
+    def parse(self, response):
         links = le.extract_links(response)
         nav_links = le_nav.extract_links(response)
         header_links = le_header.extract_links(response)

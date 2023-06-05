@@ -368,14 +368,15 @@ False                 canonical_parent     name(//link[@rel='canonical']/..)    
 """
 from scrapy_playwright.page import PageMethod
 import advertools as adv
+import datetime
 
-url_list = ['https://www.packhit.com/contactus']
+url_list = ['https://example.com', "https://www.packhit.com/about-us/"]
 
 # Define PageMethod instances here
 meta = {
     "playwright": True,
     "playwright_page_methods": [
-        PageMethod("screenshot", path="example.png", full_page=True),
+        PageMethod("screenshot", path=f"advertools/plw_screenshots/{datetime.datetime.now().isoformat()}.png", full_page=True),
     ],
 }
 
@@ -388,11 +389,15 @@ custom_settings = {
     "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
     'PLAYWRIGHT_DEFAULT_NAVIGATION_TIMEOUT': '100000',
     "PLAYWRIGHT_BROWSER_TYPE": "firefox",
+    "PLAYWRIGHT_LAUNCH_OPTIONS": {
+        "headless": True,
+        "timeout": 20 * 1000,  # 20 seconds
+    }
 }
 
 adv.plw_crawl(
     url_list=url_list,
-    output_file='output.jl',
+    output_file='advertools/plw_screenshots/output.jl',
     meta=meta,
     custom_settings=custom_settings
 )
