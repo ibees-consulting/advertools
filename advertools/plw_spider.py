@@ -283,21 +283,25 @@ class SEOSitemapPlwSpider(Spider):
         self.xpath_selectors = eval(json.loads(json.dumps(xpath_selectors)))
         self.meta = json.loads(meta)
     
-    def normalize_url(self, url):
-        parsed_url = urlparse(url)
-        domain = parsed_url.netloc
-        normalized_url = domain.split(".")[-2]
-        return normalized_url
-    
-    def update_meta(self, meta, url):
-        timestamp = datetime.datetime.now().isoformat()
+    def update_page_methods(self, meta):
         if "playwright_page_methods" in meta:
             # Reconstruct PageMethod instances
             meta["playwright_page_methods"] = [
                 PageMethod(data.pop("method"), **data)
                 for data in meta["playwright_page_methods"]
             ]
-            for method in meta["playwright_page_methods"]:
+        return meta
+    
+    def normalize_url(self, url):
+        parsed_url = urlparse(url)
+        domain = parsed_url.netloc
+        normalized_url = domain.split(".")[-2]
+        return normalized_url
+    
+    def update_meta(self, url):
+        timestamp = datetime.datetime.now().isoformat()
+        if "playwright_page_methods" in self.meta:
+            for method in self.meta["playwright_page_methods"]:
                 if method.method == "screenshot":
                     # Get the screenshot_dir from the "screenshot" method
                     screenshot_dir = method.kwargs.get("path", "")
@@ -305,7 +309,7 @@ class SEOSitemapPlwSpider(Spider):
                     normalized_url = self.normalize_url(url)
                     filename = f"{screenshot_dir}/{timestamp}-{normalized_url}.png"
                     # Create a new meta dictionary for each URL iteration
-                    updated_meta = meta.copy()
+                    updated_meta = self.meta.copy()
                     # Create a new method kwargs dictionary to avoid modifying the original one
                     new_kwargs = method.kwargs.copy()
                     # Update the path value in the new_kwargs dictionary
@@ -318,9 +322,11 @@ class SEOSitemapPlwSpider(Spider):
             return self.meta
 
     def start_requests(self):
+        # Update the meta with the appropriate PageMethod instances
+        self.meta = self.update_page_methods(self.meta)
         for url in self.start_urls:
-            updated_meta = self.update_meta(self.meta, url)
             try:
+                updated_meta = self.update_meta(url)
                 yield Request(url, meta=updated_meta, callback=self.parse, errback=self.errback)
             except Exception as e:
                 self.logger.error(repr(e))
@@ -458,6 +464,8 @@ class SEOSitemapPlwSpider(Spider):
         if self.follow_links:
             next_pages = [link.url for link in links]
             if next_pages:
+                # Update the meta with the appropriate PageMethod instances
+                self.meta = self.update_page_methods(self.meta)
                 for page in next_pages:
                     cond = _crawl_or_not(
                         page,
@@ -466,7 +474,7 @@ class SEOSitemapPlwSpider(Spider):
                         exclude_url_regex=self.exclude_url_regex,
                         include_url_regex=self.include_url_regex)
                     if cond:
-                        updated_meta = self.update_meta(self.meta, page)
+                        updated_meta = self.update_meta(page)
                         yield Request(page, callback=self.parse, meta=updated_meta,
                                       errback=self.errback)
                     # if self.skip_url_params and urlparse(page).query:
