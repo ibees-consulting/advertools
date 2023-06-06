@@ -366,22 +366,37 @@ False                 canonical_parent     name(//link[@rel='canonical']/..)    
 ====================  ===================  =================================================================  ===============================================================================================================
 
 """
+import os
 from scrapy_playwright.page import PageMethod
 import advertools as adv
 import datetime
 
 url_list = ['https://example.com', "https://quotes.toscrape.com"]
 
+# Get the current file's directory
+current_dir = os.path.dirname(os.path.abspath(__file__))
+
+# Build the screenshot_dir path relative to the current file's directory
+screenshot_dir = os.path.join(current_dir, "plw_screenshots")
+
+output_dir = os.path.join(current_dir, "output")
+
 # Define PageMethod instances here
 meta = {
     "playwright": True,
     "playwright_page_methods": [
-        PageMethod("screenshot", path=f"advertools/plw_screenshots/{datetime.datetime.now().isoformat()}.png", full_page=True),
+        PageMethod("screenshot", path=screenshot_dir, full_page=True),
     ],
 }
 
 custom_settings = {
     'LOG_LEVEL': 'DEBUG',
+    "ROBOTSTXT_OBEY": True,
+    "DOWNLOAD_DELAY": 5,
+    "CLOSESPIDER_TIMEOUT": 120,
+    "CONCURRENT_REQUESTS_PER_DOMAIN": 16,
+    "CLOSESPIDER_PAGECOUNT": 1000,
+    "DEPTH_LIMIT": 2,
     "DOWNLOAD_HANDLERS": {
         "http": "scrapy_playwright.handler.ScrapyPlaywrightDownloadHandler",
         "https": "scrapy_playwright.handler.ScrapyPlaywrightDownloadHandler",
@@ -397,7 +412,7 @@ custom_settings = {
 
 adv.plw_crawl(
     url_list=url_list,
-    output_file='advertools/plw_screenshots/output.jl',
+    output_file=f"{output_dir}/output.jl",
     meta=meta,
     custom_settings=custom_settings
 )

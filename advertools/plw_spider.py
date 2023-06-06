@@ -1,3 +1,5 @@
+from twisted.internet import asyncioreactor
+asyncioreactor.install()     # important to keep on top
 import datetime
 import json
 import logging
@@ -6,10 +8,6 @@ import platform
 import re
 from functools import reduce
 from urllib.parse import parse_qs, urlparse, urlsplit
-from scrapy.crawler import CrawlerProcess
-from scrapy.utils.project import get_project_settings
-from scrapy.extensions.feedexport import FeedExporter
-
 import pandas as pd
 import scrapy
 import scrapy.logformatter as formatter
@@ -18,6 +16,11 @@ from scrapy.linkextractors import LinkExtractor
 from scrapy.spiders import Spider
 from scrapy.utils.response import get_base_url
 from scrapy_playwright.page import PageMethod
+from twisted.internet import reactor, defer, asyncioreactor
+from scrapy.crawler import CrawlerRunner
+from scrapy.utils.log import configure_logging
+from scrapy.utils.project import get_project_settings
+from scrapy.extensions.feedexport import FeedExporter
 
 import advertools as adv
 
@@ -255,7 +258,6 @@ class SEOSitemapPlwSpider(Spider):
         'HTTPERROR_ALLOW_ALL': True,
     }
 
-
     def __init__(self, url_list, follow_links=False,
                  allowed_domains=None,
                  exclude_url_params=None,
@@ -280,16 +282,46 @@ class SEOSitemapPlwSpider(Spider):
         self.css_selectors = eval(json.loads(json.dumps(css_selectors)))
         self.xpath_selectors = eval(json.loads(json.dumps(xpath_selectors)))
         self.meta = json.loads(meta)
+    
+    def normalize_url(self, url):
+        parsed_url = urlparse(url)
+        domain = parsed_url.netloc
+        normalized_url = domain.split(".")[-2]
+        return normalized_url
+    
+    def update_meta(self, meta, url):
+        timestamp = datetime.datetime.now().isoformat()
+        if "playwright_page_methods" in meta:
+            # Reconstruct PageMethod instances
+            meta["playwright_page_methods"] = [
+                PageMethod(data.pop("method"), **data)
+                for data in meta["playwright_page_methods"]
+            ]
+            for method in meta["playwright_page_methods"]:
+                if method.method == "screenshot":
+                    # Get the screenshot_dir from the "screenshot" method
+                    screenshot_dir = method.kwargs.get("path", "")
+                    # Generate unique filename for the current URL
+                    normalized_url = self.normalize_url(url)
+                    filename = f"{screenshot_dir}/{timestamp}-{normalized_url}.png"
+                    # Create a new meta dictionary for each URL iteration
+                    updated_meta = meta.copy()
+                    # Create a new method kwargs dictionary to avoid modifying the original one
+                    new_kwargs = method.kwargs.copy()
+                    # Update the path value in the new_kwargs dictionary
+                    new_kwargs["path"] = filename
+                    # Update the meta dictionary with the modified method kwargs
+                    updated_meta["playwright_page_methods"] = [PageMethod(method.method, **new_kwargs)]
+
+                    return updated_meta
+        else:
+            return self.meta
 
     def start_requests(self):
-        # Reconstruct PageMethod instances
-        self.meta["playwright_page_methods"] = [
-            PageMethod(data.pop("method"), **data)
-            for data in self.meta["playwright_page_methods"]
-        ]
         for url in self.start_urls:
+            updated_meta = self.update_meta(self.meta, url)
             try:
-                yield Request(url, meta=self.meta, callback=self.parse, errback=self.errback)
+                yield Request(url, meta=updated_meta, callback=self.parse, errback=self.errback)
             except Exception as e:
                 self.logger.error(repr(e))
 
@@ -434,7 +466,8 @@ class SEOSitemapPlwSpider(Spider):
                         exclude_url_regex=self.exclude_url_regex,
                         include_url_regex=self.include_url_regex)
                     if cond:
-                        yield Request(page, callback=self.parse, meta=self.meta,
+                        updated_meta = self.update_meta(self.meta, page)
+                        yield Request(page, callback=self.parse, meta=updated_meta,
                                       errback=self.errback)
                     # if self.skip_url_params and urlparse(page).query:
                     #     continue
@@ -499,10 +532,11 @@ def plw_crawl(url_list, output_file, follow_links=False,
             settings_list.append(setting)
 
     # Convert PageMethod objects into dictionaries
-    meta["playwright_page_methods"] = [
-        {"method": method.method, **method.kwargs}
-        for method in meta["playwright_page_methods"]
-    ]
+    if "playwright_page_methods" in meta:
+        meta["playwright_page_methods"] = [
+            {"method": method.method, **method.kwargs}
+            for method in meta["playwright_page_methods"]
+        ]
 
     # Get the Scrapy project settings
     settings = get_project_settings()
@@ -527,10 +561,15 @@ def plw_crawl(url_list, output_file, follow_links=False,
         'xpath_selectors': str(xpath_selectors),
         'meta': json.dumps(meta),
     }
-    # Create the CrawlerProcess
-    process = CrawlerProcess(settings)
 
-    # Add the spider with the provided arguments
-    process.crawl(SEOSitemapPlwSpider, **spider_arguments)
-    # Start the crawler
-    process.start()
+    configure_logging(settings)
+    runner = CrawlerRunner(settings)
+
+    @defer.inlineCallbacks
+    def crawl():
+        yield runner.crawl(SEOSitemapPlwSpider, **spider_arguments)
+        
+    d = crawl()
+    d.addBoth(lambda _: reactor.stop())  # stop the reactor when crawl is done
+    reactor.run()
+   
