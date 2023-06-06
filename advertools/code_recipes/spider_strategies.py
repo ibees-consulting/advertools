@@ -371,7 +371,7 @@ from scrapy_playwright.page import PageMethod
 import advertools as adv
 import datetime
 
-url_list = ['https://example.com', "https://quotes.toscrape.com"]
+url_list = ['https://www.packhit.com/contactus', 'https://example.com', "https://quotes.toscrape.com"]
 
 # Get the current file's directory
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -385,7 +385,8 @@ output_dir = os.path.join(current_dir, "output")
 meta = {
     "playwright": True,
     "playwright_page_methods": [
-        PageMethod("screenshot", path=screenshot_dir, full_page=True),
+        PageMethod("wait_for_selector", "div.o_footer_copyright"),
+        PageMethod("screenshot", path=screenshot_dir, full_page=True, type="jpeg", quality=80),
     ],
 }
 
@@ -414,6 +415,6 @@ adv.plw_crawl(
     url_list=url_list,
     output_file=f"{output_dir}/output.jl",
     meta=meta,
-    follow_links=True,
+    follow_links=False,
     custom_settings=custom_settings
 )

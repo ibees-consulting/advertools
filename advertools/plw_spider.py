@@ -1,11 +1,10 @@
-from twisted.internet import asyncioreactor
-asyncioreactor.install()     # important to keep on top
 import datetime
 import json
 import logging
 from pathlib import Path
 import platform
 import re
+import subprocess
 from functools import reduce
 from urllib.parse import parse_qs, urlparse, urlsplit
 import pandas as pd
@@ -16,11 +15,6 @@ from scrapy.linkextractors import LinkExtractor
 from scrapy.spiders import Spider
 from scrapy.utils.response import get_base_url
 from scrapy_playwright.page import PageMethod
-from twisted.internet import reactor, defer, asyncioreactor
-from scrapy.crawler import CrawlerRunner
-from scrapy.utils.log import configure_logging
-from scrapy.utils.project import get_project_settings
-from scrapy.extensions.feedexport import FeedExporter
 
 import advertools as adv
 
@@ -299,7 +293,7 @@ class SEOSitemapPlwSpider(Spider):
         return normalized_url
     
     def update_meta(self, url):
-        timestamp = datetime.datetime.now().isoformat()
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
         if "playwright_page_methods" in self.meta:
             for method in self.meta["playwright_page_methods"]:
                 if method.method == "screenshot":
@@ -307,7 +301,7 @@ class SEOSitemapPlwSpider(Spider):
                     screenshot_dir = method.kwargs.get("path", "")
                     # Generate unique filename for the current URL
                     normalized_url = self.normalize_url(url)
-                    filename = f"{screenshot_dir}/{timestamp}-{normalized_url}.png"
+                    filename = f"{screenshot_dir}/{normalized_url}-{timestamp}.jpeg"
                     # Create a new meta dictionary for each URL iteration
                     updated_meta = self.meta.copy()
                     # Create a new method kwargs dictionary to avoid modifying the original one
@@ -527,55 +521,39 @@ def plw_crawl(url_list, output_file, follow_links=False,
     # default meta data if none provided
     if meta is None:
         meta = {"playwright": True}
-    # Add download handlers for playwright
-    settings_list = []
-    if custom_settings is not None:
-        for key, val in custom_settings.items():
-            if isinstance(val, str):
-                setting = f"{key}={val}"
-            else:
-                setting = f"{key}={json.dumps(val)}"
-            settings_list.append(setting)
-
     # Convert PageMethod objects into dictionaries
     if "playwright_page_methods" in meta:
         meta["playwright_page_methods"] = [
             {"method": method.method, **method.kwargs}
             for method in meta["playwright_page_methods"]
         ]
+    
+    settings_list = []
+    if custom_settings is not None:
+        for key, val in custom_settings.items():
+            if isinstance(val, (dict, list, set, tuple)):
+                setting = '='.join([key, json.dumps(val)])
+            else:
+                setting = '='.join([key, str(val)])
+            settings_list.extend(['-s', setting])
 
-    # Get the Scrapy project settings
-    settings = get_project_settings()
-    # Configure the item pipelines
+    command = ['scrapy', 'runspider', spider_path,
+               '-a', 'url_list=' + ','.join(url_list),
+               '-a', 'allowed_domains=' + ','.join(allowed_domains),
+               '-a', 'follow_links=' + str(follow_links),
+               '-a', 'exclude_url_params=' + str(exclude_url_params),
+               '-a', 'include_url_params=' + str(include_url_params),
+               '-a', 'exclude_url_regex=' + str(exclude_url_regex),
+               '-a', 'include_url_regex=' + str(include_url_regex),
+               '-a', 'css_selectors=' + str(css_selectors),
+               '-a', 'xpath_selectors=' + str(xpath_selectors),
+               '-a', 'meta=' + json.dumps(meta),
+               '-o', output_file] + settings_list
+    if len(','.join(url_list)) > MAX_CMD_LENGTH:
+        split_urls = _split_long_urllist(url_list)
 
-    # Update the settings with your custom settings
-    settings.setdict(custom_settings, priority='cmdline')
-
-    # Set the output file and other feed exporter settings
-    settings.set('FEEDS', {output_file: {'format': 'jsonlines'}})
-
-    # Create a dictionary with the spider arguments
-    spider_arguments = {
-        'url_list': ','.join(url_list),
-        'allowed_domains': ','.join(allowed_domains),
-        'follow_links': str(follow_links),
-        'exclude_url_params': str(exclude_url_params),
-        'include_url_params': str(include_url_params),
-        'exclude_url_regex': str(exclude_url_regex),
-        'include_url_regex': str(include_url_regex),
-        'css_selectors': str(css_selectors),
-        'xpath_selectors': str(xpath_selectors),
-        'meta': json.dumps(meta),
-    }
-
-    configure_logging(settings)
-    runner = CrawlerRunner(settings)
-
-    @defer.inlineCallbacks
-    def crawl():
-        yield runner.crawl(SEOSitemapPlwSpider, **spider_arguments)
-        
-    d = crawl()
-    d.addBoth(lambda _: reactor.stop())  # stop the reactor when crawl is done
-    reactor.run()
-   
+        for u_list in split_urls:
+            command[4] = 'url_list=' + ','.join(u_list)
+            subprocess.run(command)
+    else:
+        subprocess.run(command)
