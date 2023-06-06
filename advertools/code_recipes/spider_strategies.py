@@ -414,5 +414,6 @@ adv.plw_crawl(
     url_list=url_list,
     output_file=f"{output_dir}/output.jl",
     meta=meta,
+    follow_links=True,
     custom_settings=custom_settings
 )

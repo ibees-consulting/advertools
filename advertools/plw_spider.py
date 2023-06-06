@@ -464,8 +464,6 @@ class SEOSitemapPlwSpider(Spider):
         if self.follow_links:
             next_pages = [link.url for link in links]
             if next_pages:
-                # Update the meta with the appropriate PageMethod instances
-                self.meta = self.update_page_methods(self.meta)
                 for page in next_pages:
                     cond = _crawl_or_not(
                         page,
