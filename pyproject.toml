@@ -1,0 +1,35 @@
+[build-system]
+requires = ["flit_core >=2,<4"]
+build-backend = "flit_core.buildapi"
+
+[tool.flit.metadata]
+module = "advertools"
+author = "Elias Dabbas"
+author-email = "eliasdabbas@gmail.com"
+home-page = "https://github.com/eliasdabbas/advertools"
+classifiers = ["License :: OSI Approved :: MIT License"]
+requires = [
+    "pandas>=1.1.0",
+    "pyasn1>=0.4",
+    "scrapy>=2.5.0",
+    "twython>=3.8.0",
+    "pyarrow>=5.0.0",
+    "requests>=2.25.0",
+]
+description-file = 'README.rst'
+keywords = "marketing advertising adwords bingads search-engine-marketing online-marketing digital-marketing digital-advertising keywords"
+
+[tool.ruff]
+target-version = "py37"
+
+
+[tool.ruff.lint]
+# Add the `line-too-long` rule to the enforced rule set.
+extend-select = ["E501"]
+select = ["E4", "E7", "E9", "F", "B"]
+
+[tool.ruff.format]
+docstring-code-format = true
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401", "F403"]
