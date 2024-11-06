@@ -153,8 +153,7 @@ class ScreenshotSpider(Spider):
         for url in self.start_urls:
             try:
                 updated_meta = self.update_meta(url)
-                yield Request(url, callback=self.parse, meta=updated_meta, errback=self.errback,
-                              method='HEAD')
+                yield Request(url, callback=self.parse, meta=updated_meta, errback=self.errback)
             except Exception as e:
                 self.logger.error(repr(e))
 
